@@ -56,3 +56,4 @@ def lexical_analysis(text):
 def sorting_station(lexemes):
     output_list = []  # очередь вывода
     return 'test'
+
