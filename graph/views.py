@@ -8,11 +8,11 @@ import json
 
 
 def base(request):
-    from math import sin, cos
+    from math import sin, cos, sqrt
     context = {}
     points = []
-    text = '50*sin(x)'
-    step_count = 1000000
+    text = '4*sqrt(x)+25'
+    step_count = 100000
     #current_step = 0
     delta_step = 0.1
     for step in range(step_count):
@@ -20,10 +20,12 @@ def base(request):
         points.append([x, eval(text)])
     context['points'] = json.dumps(points)
     # print('Text: ', text)
-    lexemes = lexical_analysis(text)
+    # lexemes = lexical_analysis(text)
     # print('Lexemes: ', lexemes)
-    context['test'] = lexemes
-    print(points)
+    # context['test'] = lexemes
+    # print(points)
+    context['svn_width'] = 600
+    context['svn_height'] = 200
     return render(request, 'base_page.html', context)
 
 
