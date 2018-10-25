@@ -8,16 +8,22 @@ import json
 
 
 def base(request):
+    from math import sin, cos
     context = {}
     points = []
-    for point in range(-21, 21):
-        points.append((point, point*point))
+    text = '50*sin(x)'
+    step_count = 1000000
+    #current_step = 0
+    delta_step = 0.1
+    for step in range(step_count):
+        x = step*delta_step
+        points.append([x, eval(text)])
     context['points'] = json.dumps(points)
-    text = '2+33/545+12-(s*22)*34+sin(x)'
     # print('Text: ', text)
     lexemes = lexical_analysis(text)
     # print('Lexemes: ', lexemes)
     context['test'] = lexemes
+    print(points)
     return render(request, 'base_page.html', context)
 
 
@@ -54,6 +60,18 @@ def lexical_analysis(text):
 
 
 def sorting_station(lexemes):
+    from graph.stack import Stack
+    from math import sin, cos
     output_list = []  # очередь вывода
+    operation_stack = Stack()
+    # for lexeme in lexemes:
+    #     if
+    print(lexemes)
+    x=1
+    y = 1.57
+    delta = 3
+    result = eval(lexemes)
+    print(result)
     return 'test'
+
 

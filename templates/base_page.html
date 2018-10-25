@@ -6,8 +6,25 @@
     <script src="https://d3js.org/d3.v5.min.js"></script>
     <script>
     function Paint(){
-        var data = {{points}};
-        // alert(data);
+        var dataset = JSON.parse('{{points}}');
+        //alert(dataset[1][0]);
+
+        //Create SVG element
+        var svg = d3.select("body")
+                    .append("svg")
+                    .attr("width", 600)
+                    .attr("height", 200);
+        svg.selectAll("circle")
+                   .data(dataset)
+                   .enter()
+                   .append("circle")
+                   .attr("cx", function(d) {
+                        return d[0];
+                   })
+                   .attr("cy", function(d) {
+                        return d[1];
+                   })
+                   .attr("r", 1);
     }
     </script>
 </head>
@@ -18,34 +35,9 @@
         x <input type="number" class="test"/>
     </div>
     <div id="datablock">
-        <svg style="background-color: #14A5A5; " onload="Paint();">
-
-        </svg>
-        <script>
-            // Данные для визуализации в пикселях
-            var data = [20, 100, 60, 40, 70]
-            // Ширина столбика гистограммы
-            var barWidth = 20
-
-            // Аналог document.querySelector('svg') или $('svg')
-            d3.select("svg")
-              // Самая сложная для понимания часть.
-              // D3 связывает еще не созданные элементы с данными.
-              .selectAll("rect")
-              .data(data)
-              .enter()
-              // Код ниже выполнится 5 раз. Ровно столько у нас данных.
-
-              // Добавляем прямоугольник тегом rect с нужной шириной,
-              // высотой и координатами. Код похож на jQuery.
-              .append("rect")
-              .attr("width", barWidth)
-              .attr("height", d => d)
-              // Изначально все прямоугольники спозиционированы
-              // абсолютно и находятся в координате 0,0
-              // Сдвигаем прямоугольники по оси x, на [barWidth * i]
-              .attr("x", (d, i) => barWidth * i)
-        </script>
     </div>
+<script>
+    Paint();
+</script>
 </body>
 </html>
