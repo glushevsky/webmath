@@ -3,44 +3,142 @@
 <head>
     <meta charset="UTF-8">
     <title>Graph</title>
+    {% load static %}
+    <link rel="stylesheet" type="text/css" href="{% static 'styles.css' %}">
     <script src="https://d3js.org/d3.v5.min.js"></script>
     <script>
-    function Paint(){
-        var dataset = JSON.parse('{{points}}');
-        //alert(dataset[1][0]);
-        var svg_width = '{{svn_width}}';
-        var svg_height = '{{svn_height}}';
-        //Create SVG element
-        var svg = d3.select("body")
-                    .append("svg")
-                    .attr("width", svg_width)
-                    .attr("height", svg_height)
-            .attr('style', 'border: 1px solid black;');
-        svg.selectAll("circle")
-                   .data(dataset)
-                   .enter()
-                   .append("circle")
-                   .attr("cx", function(d) {
-                       // alert(d[0] + svg_width/2.0);
-                        return d[0] + svg_width/2.0;
-                   })
-                   .attr("cy", function(d) {
-                        return -d[1] + svg_height/2.0;
-                   })
-                   .attr("r", 1);
-    }
+        var svg_width = '{{svg_width}}';
+        var svg_height = '{{svg_height}}';
+
+        function AjaxTest(){
+
+        }
+
+        function SetGrid(svg){
+            for(var i = svg_width/2.0; i < svg_width; i++)
+            {
+                svg.append('line')
+                    .attr('name', 'vertical_grid')
+                    .attr('x1', i)
+                    .attr('y1', 0)
+                    .attr('x2', i)
+                    .attr('y2', svg_height)
+                    .style('stroke', '#e0e0e0')
+                    .style('stroke-width', '1px');
+                svg.append('line')
+                    .attr('id', 'vertical_grid')
+                    .attr('x1', svg_width - i)
+                    .attr('y1', 0)
+                    .attr('x2', svg_width - i)
+                    .attr('y2', svg_height)
+                    .style('stroke', '#e0e0e0')
+                    .style('stroke-width', '1px');
+            }
+            for(var i = svg_height/2.0; i < svg_height; i++)
+            {
+                svg.append('line')
+                    .attr('name', 'horisontal_grid')
+                    .attr('x1', 0)
+                    .attr('y1', i)
+                    .attr('x2', svg_width)
+                    .attr('y2', i)
+                    .style('stroke', '#e0e0e0')
+                    .style('stroke-width', '1px');
+                svg.append('line')
+                    .attr('id', 'horisontal_grid')
+                    .attr('x1', 0)
+                    .attr('y1', svg_height - i)
+                    .attr('x2', svg_width)
+                    .attr('y2', svg_height - i)
+                    .style('stroke', '#e0e0e0')
+                    .style('stroke-width', '1px');
+            }
+        }
+        function GraphInit(){
+            //Create SVG element
+            var formula = document.getElementById('formula_string');
+            formula.setAttribute("style", "width: " + String(svg_width) + 'px');
+            var svg = d3.select("#visual_block")
+                        .append("svg")
+                        .attr('id', 'paint_plate')
+                        .attr("width", svg_width)
+                        .attr("height", svg_height)
+                        .style('border', '1px solid #aaaaaa')
+                        .style('background-color', '#ffffff');
+            SetGrid(svg);
+            var paint_plate = document.getElementById('paint_plate');
+            paint_plate.onmousemove = function(event){
+                var offset_left = paint_plate.getBoundingClientRect().left;
+                var offset_top = paint_plate.getBoundingClientRect().top;
+                document.getElementById('coordinates_string').innerText = 'x: ' + String(event.clientX - svg_width/2.0 - offset_left) + ' y: ' + String(-event.clientY + svg_height/2.0 + offset_top);
+            };
+            paint_plate.onmouseout = function(event){
+                document.getElementById('coordinates_string').innerText = '';
+            };
+            svg.append("line")
+                .attr('id', 'X_axis')
+                .attr('x1', 0)
+                .attr('y1', svg_height/2.0)
+                .attr('x2', svg_width)
+                .attr('y2', svg_height/2.0)
+                .style('stroke', '#909090')
+                .style('stroke-width', '1px');
+            svg.append("line")
+                .attr('id', 'Y_axis')
+                .attr('x1', svg_width/2.0)
+                .attr('y1', 0)
+                .attr('x2', svg_width/2.0)
+                .attr('y2', svg_height)
+                .style('stroke', '#909090')
+                .style('stroke-width', '1px');
+        }
+        function Paint(){
+            var dataset = JSON.parse('{{points}}');
+            var svg = d3.select("svg");
+            svg.selectAll("circle")
+                       .data(dataset)
+                       .enter()
+                       .append("circle")
+                       .attr("cx", function(d) {
+                           // alert(d[0] + svg_width/2.0);
+                            return d[0] + svg_width/2.0;
+                       })
+                       .attr("cy", function(d) {
+                            return -d[1] + svg_height/2.0;
+                       })
+                       .attr("r", 1);
+        }
     </script>
 </head>
-<body>
-    {% load static %}
+<body onload="GraphInit();">
     <h3>graph container</h3>
-    <div id="legend">
-        x <input type="number" class="test"/>
+    <div id="legend" class="div_block">
+        <a id="start_painting" class="button" onclick="Paint();">Построить</a>
+        <a id="start_painting" class="button" onclick="">Test</a>
+{#        <input type="button" id="start_painting" value="Построить" onclick="Paint();"/><br/>#}
+        <div id="coordinates_string" class="info"></div>
     </div>
-    <div id="datablock">
+    <div id="data_block" class="div_block">
+        <label for="formula_string">Формула для построения:</label><br/>
+        <input type="text" id="formula_string" name="data_container" /><br/>
+        <label for="X_selector">Ось X:</label>
+        <select id="X_selector" name="data_container">
+            {% for variable in variables %}
+                <option value="{{ variable }}">{{ variable }}</option>
+            {% endfor %}
+        </select>
+        <label for="Y_selector">Ось Y:</label>
+        <select id="Y_selector" name="data_container">
+            {% for variable in variables %}
+                <option value="{{ variable }}">{{ variable }}</option>
+            {% endfor %}
+        </select><br/>
+    {% for variable in variables %}
+        <label for="parameter_{{ variable }}">{{ variable }}:</label>
+        <input type="text" id="parameter_{{ variable }}"/>
+    {% endfor %}
     </div>
-<script>
-    Paint();
-</script>
+    <div id="visual_block" class="div_block">
+    </div>
 </body>
 </html>
