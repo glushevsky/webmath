@@ -3,34 +3,47 @@ from django.shortcuts import render
 from django.http import HttpResponse
 from django.template import loader
 import json
+import cgi
+# from django.views.decorators.csrf import csrf_exempt
 
 # Create your views here.
-
-
-def base(request):
+def data_processing(request):
     from math import sin, cos, sqrt
-    context = {}
+    request_context = request.GET
+    text = request_context['formula']
+    svg_width = int(request_context['width'])
+    svg_height = int(request_context['height'])
+    step_count = svg_width * int(request_context['detail'])
+    delta_step = 1.0 / float(request_context['detail'])
     points = []
-    variables = ['x', 'y', 'a', 'b', 'w']
-    text = '4*sqrt(x)+25'
-    svg_width = 1400
-    svg_height = 600
-    step_count = svg_width*10
-    #current_step = 0
-    delta_step = 0.1
     for step in range(-step_count, step_count):
         try:
             x = step*delta_step
             points.append([x, eval(text)])
         except ValueError:
             pass
+    return HttpResponse(json.dumps(points))
 
-    context['points'] = json.dumps(points)
-    # print('Text: ', text)
-    # lexemes = lexical_analysis(text)
-    # print('Lexemes: ', lexemes)
-    # context['test'] = lexemes
-    # print(points)
+
+def base(request):
+    context = {}
+    # from math import sin, cos, sqrt
+    # points = []
+    svg_width = 1400
+    svg_height = 600
+    variables = ['x', 'y', 'a', 'b', 'w']
+    # text = '4*sqrt(x)+25'
+    # step_count = svg_width*10
+    # #current_step = 0
+    # delta_step = 0.1
+    # for step in range(-step_count, step_count):
+    #     try:
+    #         x = step*delta_step
+    #         points.append([x, eval(text)])
+    #     except ValueError:
+    #         pass
+    #
+    # context['points'] = json.dumps(points)
     context['svg_width'] = svg_width
     context['svg_height'] = svg_height
     context['variables'] = variables
