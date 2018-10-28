@@ -12,9 +12,10 @@
         var svg_height = '{{svg_height}}';
 
         function SetGrid(svg){
+            var g = d3.select("g");
             for(var i = svg_width/2.0; i < svg_width; i++)
             {
-                svg.append('line')
+                g.append('line')
                     .attr('name', 'vertical_grid')
                     .attr('x1', i)
                     .attr('y1', 0)
@@ -22,7 +23,7 @@
                     .attr('y2', svg_height)
                     .style('stroke', '#e0e0e0')
                     .style('stroke-width', '1px');
-                svg.append('line')
+                g.append('line')
                     .attr('id', 'vertical_grid')
                     .attr('x1', svg_width - i)
                     .attr('y1', 0)
@@ -33,7 +34,7 @@
             }
             for(var i = svg_height/2.0; i < svg_height; i++)
             {
-                svg.append('line')
+                g.append('line')
                     .attr('name', 'horisontal_grid')
                     .attr('x1', 0)
                     .attr('y1', i)
@@ -41,7 +42,7 @@
                     .attr('y2', i)
                     .style('stroke', '#e0e0e0')
                     .style('stroke-width', '1px');
-                svg.append('line')
+                g.append('line')
                     .attr('id', 'horisontal_grid')
                     .attr('x1', 0)
                     .attr('y1', svg_height - i)
@@ -87,27 +88,25 @@
                         .style('border', '1px solid #aaaaaa')
                         .style('background-color', '#ffffff');
 
-            SetGrid(svg);
-
             var g = svg.append("g");
             g.append("rect")
                     .attr("id", "special_rect")
                     .attr("width", svg_width)
                     .attr("height", svg_height)
                     .style("fill", "none")
-                    .style("pointer-events", "all")
-                    .call(d3.zoom()
+                    .style("pointer-events", "all");
+                    /*.call(d3.zoom()
                         .scaleExtent([1 / 2, 4])
                         .on("zoom", function(){
-                            alert('b');
-                            g.attr("transform", d3.event.transform);
-                        }));
-            /*svg.call(d3.zoom()
-                .scaleExtent([1 / 2, 8])
-                .on("zoom", function(){
-                            alert('a');
                             g.attr("transform", d3.event.transform);
                         }));*/
+            SetGrid(svg);
+            svg.call(d3.zoom()
+                .scaleExtent([1 / 2, 8])
+                .on("zoom", function(){
+                           // alert('a');
+                            g.attr("transform", d3.event.transform);
+                        }));
 
             var paint_plate = document.getElementById('paint_plate');
             paint_plate.onmousemove = function(event){
@@ -118,7 +117,7 @@
             paint_plate.onmouseout = function(event){
                 document.getElementById('coordinates_string').innerText = '';
             };
-            svg.append("line")
+            g.append("line")
                 .attr('id', 'X_axis')
                 .attr('x1', 0)
                 .attr('y1', svg_height/2.0)
@@ -126,7 +125,7 @@
                 .attr('y2', svg_height/2.0)
                 .style('stroke', '#909090')
                 .style('stroke-width', '1px');
-            svg.append("line")
+            g.append("line")
                 .attr('id', 'Y_axis')
                 .attr('x1', svg_width/2.0)
                 .attr('y1', 0)
@@ -137,14 +136,14 @@
         }
         function Paint(data){
             var dataset = JSON.parse(data);
-            var svg = d3.select("svg");
-            Clear(svg);
-            svg.selectAll("circle")
+            // var svg = d3.select("svg");
+            var g = d3.select("g");
+            Clear(g);
+            g.selectAll("circle")
                        .data(dataset)
                        .enter()
                        .append("circle")
                        .attr("cx", function(d) {
-                           // alert(d[0] + svg_width/2.0);
                             return d[0] + svg_width/2.0;
                        })
                        .attr("cy", function(d) {
@@ -153,8 +152,8 @@
                        .attr("r", 1);
 
         }
-        function Clear(svg){
-            svg.selectAll("circle").remove();
+        function Clear(g){
+            g.selectAll("circle").remove();
         }
 
 /*
@@ -203,7 +202,7 @@ function phyllotaxis(radius) {
     <h3>graph container</h3>
     <div id="legend" class="div_block">
         <a id="start_painting" class="button" onclick="DataProcessing();">Построить</a>
-        <a id="clearing" class="button" onclick="Clear(d3.select('svg'));">Очистить</a>
+        <a id="clearing" class="button" onclick="Clear(d3.select('g'));">Очистить</a>
         <div id="coordinates_string" class="info"></div>
     </div>
     <div id="data_block" class="div_block">
@@ -225,7 +224,7 @@ function phyllotaxis(radius) {
         </select><br/>
     {% for variable in variables %}
         <label for="parameter_{{ variable }}">{{ variable }}:</label>
-        <input type="text" id="parameter_{{ variable }}"/>
+        <input type="number" id="parameter_{{ variable }}"/>
     {% endfor %}
     </div>
     <div id="visual_block" class="div_block">
