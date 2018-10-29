@@ -3,19 +3,28 @@ from django.shortcuts import render
 from django.http import HttpResponse
 from django.template import loader
 import json
-import cgi
+from math import *
+# import cgi
 # from django.views.decorators.csrf import csrf_exempt
+
+variables = ['a', 'b', 'f', 'w', 'T']
+
 
 # Create your views here.
 def data_processing(request):
-    from math import sin, cos, sqrt
+    # from math import sin, cos, sqrt
+    # get data
     request_context = request.GET
     text = request_context['formula']
     svg_width = int(request_context['width'])
     svg_height = int(request_context['height'])
+    parameters = json.loads(request_context['parameters'])
     step_count = svg_width * int(request_context['detail'])
     delta_step = 1.0 / float(request_context['detail'])
     points = []
+    # creating parameters
+    for param in parameters:
+        globals()[param['name']] = float(param['value'])
     for step in range(-step_count, step_count):
         try:
             x = step*delta_step
@@ -27,23 +36,8 @@ def data_processing(request):
 
 def base(request):
     context = {}
-    # from math import sin, cos, sqrt
-    # points = []
-    svg_width = 1400
+    svg_width = 1200
     svg_height = 600
-    variables = ['x', 'y', 'a', 'b', 'w']
-    # text = '4*sqrt(x)+25'
-    # step_count = svg_width*10
-    # #current_step = 0
-    # delta_step = 0.1
-    # for step in range(-step_count, step_count):
-    #     try:
-    #         x = step*delta_step
-    #         points.append([x, eval(text)])
-    #     except ValueError:
-    #         pass
-    #
-    # context['points'] = json.dumps(points)
     context['svg_width'] = svg_width
     context['svg_height'] = svg_height
     context['variables'] = variables

@@ -10,43 +10,44 @@
     <script>
         var svg_width = '{{svg_width}}';
         var svg_height = '{{svg_height}}';
+        var field_size = 5;
 
         function SetGrid(svg){
             var g = d3.select("g");
-            for(var i = svg_width/2.0; i < svg_width; i++)
+            for(var i = svg_width/2.0; i < svg_width*field_size; i+=10)
             {
                 g.append('line')
                     .attr('name', 'vertical_grid')
                     .attr('x1', i)
-                    .attr('y1', 0)
+                    .attr('y1', -svg_height*field_size)
                     .attr('x2', i)
-                    .attr('y2', svg_height)
+                    .attr('y2', svg_height*field_size)
                     .style('stroke', '#e0e0e0')
                     .style('stroke-width', '1px');
                 g.append('line')
                     .attr('id', 'vertical_grid')
                     .attr('x1', svg_width - i)
-                    .attr('y1', 0)
+                    .attr('y1', -svg_height*field_size)
                     .attr('x2', svg_width - i)
-                    .attr('y2', svg_height)
+                    .attr('y2', svg_height*field_size)
                     .style('stroke', '#e0e0e0')
                     .style('stroke-width', '1px');
             }
-            for(var i = svg_height/2.0; i < svg_height; i++)
+            for(var i = svg_height/2.0; i < svg_height*field_size; i+=10)
             {
                 g.append('line')
                     .attr('name', 'horisontal_grid')
-                    .attr('x1', 0)
+                    .attr('x1', -svg_width*field_size)
                     .attr('y1', i)
-                    .attr('x2', svg_width)
+                    .attr('x2', svg_width*field_size)
                     .attr('y2', i)
                     .style('stroke', '#e0e0e0')
                     .style('stroke-width', '1px');
                 g.append('line')
                     .attr('id', 'horisontal_grid')
-                    .attr('x1', 0)
+                    .attr('x1', -svg_width*field_size)
                     .attr('y1', svg_height - i)
-                    .attr('x2', svg_width)
+                    .attr('x2', svg_width*field_size)
                     .attr('y2', svg_height - i)
                     .style('stroke', '#e0e0e0')
                     .style('stroke-width', '1px');
@@ -54,19 +55,55 @@
         }
         //AJAX
         function DataProcessing() {
+            var parameters = [];
+            var parameters_list = $("input[name='parameters']");
+            for (var i=0; i < parameters_list.length; i++)
+            {
+                var param = {}
+                param.name = parameters_list[i].id.split('_')[1];
+                param.value = $(parameters_list[i]).val();
+                parameters[i] = param;
+            }
+            // alert(parameters);
             $.ajax({
+                    xhr: function()
+                    {
+                        $('#status_bar').val('0%');
+                        $('#status_block').css('opacity', '1');
+                        var xhr = new window.XMLHttpRequest();
+                        // прогресс загрузки на сервер
+                        xhr.upload.addEventListener("progress", function(evt){
+                            if (evt.lengthComputable) {
+                                var percentComplete = evt.loaded / evt.total * 100;
+                                // делать что-то...
+                                $('#status_bar').val(String(Math.round(percentComplete)) + '%');
+                                console.log(percentComplete*100);
+                            }
+                        }, false);
+                        // прогресс скачивания с сервера
+                        xhr.addEventListener("progress", function(evt){
+                            if (evt.lengthComputable) {
+                                var percentComplete = evt.loaded / evt.total * 100;
+                                // делать что-то...
+                                $('#status_bar').val(String(Math.round(percentComplete)) + '%');
+                                console.log(percentComplete);
+                            }
+                        }, false);
+                        return xhr;
+                    },
                     url: '/graph/data_processing',
                     data: {
                         'formula': $('#formula_string').val(),
                         'width': svg_width,
                         'height': svg_height,
-                        'detail': $('#detail_string').val()},
+                        'detail': $('#detail_string').val(),
+                        'parameters':  JSON.stringify(parameters)},
                     success: function (data) {
-                        //$('#testtext').val(data)
+                        $('#status_block').css('opacity', '0');
                         Paint(data);
                     },
-                    onerror: function (data) {
-                    alert('Возникла ошибка');
+                    error: function (data) {
+                        alert('Возникла ошибка. Проверьте правильность ввода строки.');
                     }
                 }
             );
@@ -112,25 +149,40 @@
             paint_plate.onmousemove = function(event){
                 var offset_left = paint_plate.getBoundingClientRect().left;
                 var offset_top = paint_plate.getBoundingClientRect().top;
-                document.getElementById('coordinates_string').innerText = 'x: ' + String(event.clientX - svg_width/2.0 - offset_left) + ' y: ' + String(-event.clientY + svg_height/2.0 + offset_top);
+                var x_pos = event.clientX - svg_width/2.0 - offset_left;
+                var y_pos = -event.clientY + svg_height/2.0 + offset_top;
+                /*var transform_str = g.attr("transform");
+                if (transform_str != null)
+                {
+                    var translateX = Number(transform_str.split('translate(')[1].split(') scale(')[0].split(',')[0]);
+                    var translateY = Number(transform_str.split('translate(')[1].split(') scale(')[0].split(',')[1]);
+                    var scale = Number(transform_str.split('translate(')[1].split(') scale(')[1].split(')')[0]);
+                    x_pos = x_pos*scale + translateX;
+                    y_pos = y_pos*scale + translateY;
+                }*/
+                document.getElementById('coordinates_string').innerText = 'x: ' + String(x_pos) + ' y: ' + String(y_pos);
             };
             paint_plate.onmouseout = function(event){
                 document.getElementById('coordinates_string').innerText = '';
             };
+            var xAxisLength = 100;
+            /*
+            var xAxis = svg.axis().scale(xAxisLength).orient("bottom").ticks(5);
+            g.call(xAxis);*/
             g.append("line")
                 .attr('id', 'X_axis')
-                .attr('x1', 0)
+                .attr('x1', -svg_width*field_size)
                 .attr('y1', svg_height/2.0)
-                .attr('x2', svg_width)
+                .attr('x2', svg_width*field_size)
                 .attr('y2', svg_height/2.0)
                 .style('stroke', '#909090')
                 .style('stroke-width', '1px');
             g.append("line")
                 .attr('id', 'Y_axis')
                 .attr('x1', svg_width/2.0)
-                .attr('y1', 0)
+                .attr('y1', -svg_height*field_size)
                 .attr('x2', svg_width/2.0)
-                .attr('y2', svg_height)
+                .attr('y2', svg_height*field_size)
                 .style('stroke', '#909090')
                 .style('stroke-width', '1px');
         }
@@ -139,6 +191,7 @@
             // var svg = d3.select("svg");
             var g = d3.select("g");
             Clear(g);
+            var thickness = $('#thickness_string').val();
             g.selectAll("circle")
                        .data(dataset)
                        .enter()
@@ -149,7 +202,7 @@
                        .attr("cy", function(d) {
                             return -d[1] + svg_height/2.0;
                        })
-                       .attr("r", 1);
+                       .attr("r", thickness);
 
         }
         function Clear(g){
@@ -203,29 +256,86 @@ function phyllotaxis(radius) {
     <div id="legend" class="div_block">
         <a id="start_painting" class="button" onclick="DataProcessing();">Построить</a>
         <a id="clearing" class="button" onclick="Clear(d3.select('g'));">Очистить</a>
+        <div id="status_block" style="transition: opacity 1s; opacity: 0; display: inline;">
+            <label for="status_bar">Статус выполнения:</label>
+            <input type="text" id="status_bar" class="info" disabled readonly/>
+        </div>
         <div id="coordinates_string" class="info"></div>
     </div>
     <div id="data_block" class="div_block">
-        <label for="detail_string">Шагов на единицу:</label><br/>
-        <input type="number" id="detail_string" name="data_container" min="1" value="10"/><br/>
-        <label for="formula_string">Формула для построения:</label><br/>
+        <table>
+            <tr>
+                <th colspan="2">Настройки построения</th>
+            </tr>
+            <tr>
+                <td><label for="detail_string">Шагов на единицу:</label></td>
+                <td><label for="thickness_string">Радиус точек построения:</label></td>
+                <!--<td><label for="orientation_select">Вид обхода:</label></td>-->
+                <!--<td><label for="color_select">Цвет точек построения:</label></td>-->
+            </tr>
+            <tr>
+                <td><input type="number" id="detail_string" name="data_container" min="1" value="10"/></td>
+                <td><input type="number" id="thickness_string" name="data_container" min="0.001" value="0.1"/></td>
+                <!--<td>
+                    <select id="orientation_select" name="data_container">
+                        <option value="hor">Горизонтальный</option>
+                        <option value="vert">Вертикальный</option>
+                        <option value="dbl">Двойной</option>
+                    </select>
+                </td>-->
+               <!--<td>
+                    <select id="color_select">
+                        <option value="#000000"><p style="width: 20px; background-color: #000000;"></p></option>
+                        <option value="#ff0000"></option>
+                        <option value="#00ff00"></option>
+                        <option value="#0000ff"></option>
+                    </select>
+                </td>-->
+            </tr>
+            <tr>
+                <th colspan="2">Переменные</th>
+            </tr>
+            <tr>
+                <td><label for="X_selector">Ось X:</label></td>
+                <td><label for="Y_selector">Ось Y:</label></td>
+            </tr>
+            <tr>
+                <td>
+                    <select id="X_selector" name="data_container" style="width:100%;">
+                        {% for variable in variables %}
+                            <option value="{{ variable }}">{{ variable }}</option>
+                        {% endfor %}
+                    </select>
+                </td>
+                <td>
+                    <select id="Y_selector" name="data_container" style="width:100%;">
+                        <option value="empty">---</option>
+                        {% for variable in variables %}
+                            <option value="{{ variable }}">{{ variable }}</option>
+                        {% endfor %}
+                    </select>
+                </td>
+            </tr>
+        </table>
+
+        <table style="border: 1px dashed #609fff; border-radius: 5px;">
+            <tr>
+                <th colspan="{{ variables|length }}">Значения параметров</th>
+            </tr>
+            <tr>
+                {% for variable in variables %}
+                    <td><label for="parameter_{{ variable }}">{{ variable }}:</label></td>
+                {% endfor %}
+            </tr>
+            <tr>
+                {% for variable in variables %}
+                    <td><input type="number" id="parameter_{{ variable }}" name="parameters" value="0"/></td>
+                {% endfor %}
+            </tr>
+        </table>
+
+        <label for="formula_string"><b>Формула для построения:</b></label><br/>
         <input type="text" id="formula_string" name="data_container" value="4*sqrt(x)+25"/><br/>
-        <label for="X_selector">Ось X:</label>
-        <select id="X_selector" name="data_container">
-            {% for variable in variables %}
-                <option value="{{ variable }}">{{ variable }}</option>
-            {% endfor %}
-        </select>
-        <label for="Y_selector">Ось Y:</label>
-        <select id="Y_selector" name="data_container">
-            {% for variable in variables %}
-                <option value="{{ variable }}">{{ variable }}</option>
-            {% endfor %}
-        </select><br/>
-    {% for variable in variables %}
-        <label for="parameter_{{ variable }}">{{ variable }}:</label>
-        <input type="number" id="parameter_{{ variable }}"/>
-    {% endfor %}
     </div>
     <div id="visual_block" class="div_block">
     </div>
