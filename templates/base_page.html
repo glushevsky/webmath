@@ -65,6 +65,7 @@
                 parameters[i] = param;
             }
             // alert(parameters);
+
             $.ajax({
                     xhr: function()
                     {
@@ -96,6 +97,7 @@
                         'formula': $('#formula_string').val(),
                         'width': svg_width,
                         'height': svg_height,
+                        'test_flag': $('#test_checkbox').prop("checked"),
                         'detail': $('#detail_string').val(),
                         'parameters':  JSON.stringify(parameters)},
                     success: function (data) {
@@ -329,11 +331,12 @@ function phyllotaxis(radius) {
             </tr>
             <tr>
                 {% for variable in variables %}
-                    <td><input type="number" id="parameter_{{ variable }}" name="parameters" value="0"/></td>
+                    <td><input type="number" id="parameter_{{ variable }}" name="parameters" value="1.0"/></td>
                 {% endfor %}
             </tr>
-        </table>
-
+        </table><br/>
+        <label for="test_checkbox">test:</label>
+        <input type="checkbox" id="test_checkbox" name="data_container" checked/><br/>
         <label for="formula_string"><b>Формула для построения:</b></label><br/>
         <input type="text" id="formula_string" name="data_container" value="4*sqrt(x)+25"/><br/>
     </div>

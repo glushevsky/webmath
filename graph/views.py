@@ -7,7 +7,7 @@ from math import *
 # import cgi
 # from django.views.decorators.csrf import csrf_exempt
 
-variables = ['a', 'b', 'f', 'w', 'T']
+variables = ['w', 'f', 'm', 'T', 'b']
 
 
 # Create your views here.
@@ -25,12 +25,35 @@ def data_processing(request):
     # creating parameters
     for param in parameters:
         globals()[param['name']] = float(param['value'])
-    for step in range(-step_count, step_count):
-        try:
-            x = step*delta_step
-            points.append([x, eval(text)])
-        except ValueError:
-            pass
+
+    test_flag = request_context['test_flag']
+    if test_flag == 'true':
+        d = eval('m * m / (T * T)')
+        for step in range(-step_count, step_count):
+            try:
+                a = step * delta_step
+                re_psi = eval('((d * d - d * (w * w - a * cos(f) - b) - b * w * w) * (a * d * cos(f - w * T) - b * w * w + b * d) - (w * w - a * w * sin(f) - d) * a * d * w * sin(f - w * T)) / ((a * d * cos(f - w * T) - b * w * w + b * d) * (a * d * cos(f - w * T) - b * w * w + b * d) + a * a * d * w * w * sin(f - w * T) * sin(f - w * T))')
+                im_psi = eval('((d * d - d * (w * w - a * cos(f) - b) - b * w * w) * a * sqrt(d) * w * sin(f - w * T) + sqrt(d) * (w * w - a * w * sin(f) - d) * (a * d * cos(f - w * T) - b * w * w + b * d)) / ((a * d * cos(f - w * T) - b * w * w + b * d) * (a * d * cos(f - w * T) - b * w * w + b * d) + a * a * d * w * w * sin(f - w * T) * sin(f - w * T))')
+                f1 = eval('re_psi * 2.0 * sqrt(d) * (a * cos(f - w * T) + b) + im_psi - a - w - sin(f - w * T) - 4.0 * d * sqrt(d) + 2.0 * sqrt(d) * (w * w - a * cos(f) - b)')
+                f2 = eval('re_psi * d * (a * cos(f - w * T) + b) + im_psi * sqrt(d) * a * w * sin(f - w * T) - re_psi * b * w * w')
+                f3 = eval('-re_psi * a * w * sin(f - w * T) + im_psi * 2.0 * sqrt(d) * (a * cos(f - w * T) + b) - w * w + 3.0 * d + a * w * sin(f)')
+                f4 = eval('-re_psi * sqrt(d) * a * w * sin(f - w * T) - re_psi * b * w * w + im_psi * d * (a * cos(f - w * T) + b)')
+                points.append([a, f1 * f2 + f3 * f4])
+            except ValueError:
+                pass
+            except ZeroDivisionError:
+                print('zero_division')
+                pass
+    else:
+        for step in range(-step_count, step_count):
+            try:
+                x = step*delta_step
+                points.append([x, eval(text)])
+            except ValueError:
+                pass
+            except ZeroDivisionError:
+                print('zero_division')
+                pass
     return HttpResponse(json.dumps(points))
 
 
