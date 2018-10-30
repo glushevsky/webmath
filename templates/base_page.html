@@ -141,7 +141,7 @@
                         }));*/
             SetGrid(svg);
             svg.call(d3.zoom()
-                .scaleExtent([1 / 2, 8])
+                .scaleExtent([1 / 2, 30])
                 .on("zoom", function(){
                            // alert('a');
                             g.attr("transform", d3.event.transform);
