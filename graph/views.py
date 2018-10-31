@@ -7,7 +7,8 @@ from math import *
 # import cgi
 # from django.views.decorators.csrf import csrf_exempt
 
-variables = ['w', 'f', 'm', 'T', 'b']
+variables = ['w', 'f', 'm', 'T', 'b', 'x']
+lambda1_variables = ['w', 'f', 'm', 'T', 'b']
 
 
 # Create your views here.
@@ -26,8 +27,8 @@ def data_processing(request):
     for param in parameters:
         globals()[param['name']] = float(param['value'])
 
-    test_flag = request_context['test_flag']
-    if test_flag == 'true':
+    type_selector = request_context['type_selector']
+    if type_selector == 'lambda1':  # special  case
         d = eval('m * m / (T * T)')
         for step in range(-step_count, step_count):
             try:
@@ -44,7 +45,7 @@ def data_processing(request):
             except ZeroDivisionError:
                 print('zero_division')
                 pass
-    else:
+    else:  # common cases
         for step in range(-step_count, step_count):
             try:
                 x = step*delta_step

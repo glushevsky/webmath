@@ -97,7 +97,7 @@
                         'formula': $('#formula_string').val(),
                         'width': svg_width,
                         'height': svg_height,
-                        'test_flag': $('#test_checkbox').prop("checked"),
+                        'type_selector': $('#type_selector').val(),
                         'detail': $('#detail_string').val(),
                         'parameters':  JSON.stringify(parameters)},
                     success: function (data) {
@@ -117,8 +117,10 @@
 
         function GraphInit() {
             //Create SVG element
-            var formula = document.getElementById('formula_string');
-            formula.setAttribute("style", "width: " + String(svg_width) + 'px');
+            var formula = $('#formula_string');
+            var formula_textarea = $('#formula_textarea');
+            formula.css("width", String(svg_width) + 'px');
+            formula_textarea.css('width', String(svg_width) + 'px');
             var svg = d3.select("#visual_block")
                         .append("svg")
                         .attr('id', 'paint_plate')
@@ -210,51 +212,44 @@
         function Clear(g){
             g.selectAll("circle").remove();
         }
-
-/*
-var svg = d3.select("svg"),
-    width = +svg.attr("width"),
-    height = +svg.attr("height");
-
-var points = d3.range(2000).map(phyllotaxis(10));
-
-var g = svg.append("g");
-
-g.selectAll("circle")
-    .data(points)
-  .enter().append("circle")
-    .attr("cx", function(d) { return d[0]; })
-    .attr("cy", function(d) { return d[1]; })
-    .attr("r", 2.5);
-
-svg.append("rect")
-    .attr("width", width)
-    .attr("height", height)
-    .style("fill", "none")
-    .style("pointer-events", "all")
-    .call(d3.zoom()
-        .scaleExtent([1 / 2, 4])
-        .on("zoom", zoomed));
-
-function zoomed() {
-  g.attr("transform", d3.event.transform);
-}
-
-function phyllotaxis(radius) {
-  var theta = Math.PI * (3 - Math.sqrt(5));
-  return function(i) {
-    var r = radius * Math.sqrt(i), a = theta * i;
-    return [
-      width / 2 + r * Math.cos(a),
-      height / 2 + r * Math.sin(a)
-    ];
-  };
-}
-*/
+        function Reconfigurate(){
+            var selector_type = $('#type_selector').val();
+            var header_text = $('#type_selector option[value=' + selector_type + ']').text();
+            $('#header').text(header_text);
+            if (selector_type == 'lambda1'){
+                $('#container_universal_only_1').css('display', 'none');
+                $('#container_universal_only_2').css('display', 'none');
+                $('.div_block').addClass('div_block_lambda1');
+                $('.button').addClass('button_lambda1');
+                $('.border_block').addClass('border_block_lambda1');
+                $('#container_label1_only').css('display', 'inline-block');
+            }
+            else{
+                $('#container_universal_only_1').css('display', 'table-row-group');
+                $('#container_universal_only_2').css('display', 'inline-block');
+                $('.div_block').removeClass('div_block_lambda1');
+                $('.button').removeClass('button_lambda1');
+                $('.border_block').removeClass('border_block_lambda1');
+                $('#container_label1_only').css('display', 'none');
+            }
+        }
+        function Wrap(){
+            var wrap = $('#wrapping_area');
+            if(wrap.css('visibility') == 'hidden'){
+                wrap.css('visibility', 'visible');
+                wrap.css('max-height', '308px');
+                $('#wrapping_arrow').removeClass('block_wrapper_up');
+            }
+            else{
+                wrap.css('visibility', 'hidden');
+                wrap.css('max-height', 0);
+                $('#wrapping_arrow').addClass('block_wrapper_up');
+            }
+        }
     </script>
 </head>
 <body onload="GraphInit();">
-    <h3>graph container</h3>
+    <h3 id="header">Произвольное построение</h3>
     <div id="legend" class="div_block">
         <a id="start_painting" class="button" onclick="DataProcessing();">Построить</a>
         <a id="clearing" class="button" onclick="Clear(d3.select('g'));">Очистить</a>
@@ -265,80 +260,94 @@ function phyllotaxis(radius) {
         <div id="coordinates_string" class="info"></div>
     </div>
     <div id="data_block" class="div_block">
-        <table>
-            <tr>
-                <th colspan="2">Настройки построения</th>
-            </tr>
-            <tr>
-                <td><label for="detail_string">Шагов на единицу:</label></td>
-                <td><label for="thickness_string">Радиус точек построения:</label></td>
-                <!--<td><label for="orientation_select">Вид обхода:</label></td>-->
-                <!--<td><label for="color_select">Цвет точек построения:</label></td>-->
-            </tr>
-            <tr>
-                <td><input type="number" id="detail_string" name="data_container" min="1" value="10"/></td>
-                <td><input type="number" id="thickness_string" name="data_container" min="0.001" value="0.1"/></td>
-                <!--<td>
-                    <select id="orientation_select" name="data_container">
-                        <option value="hor">Горизонтальный</option>
-                        <option value="vert">Вертикальный</option>
-                        <option value="dbl">Двойной</option>
-                    </select>
-                </td>-->
-               <!--<td>
-                    <select id="color_select">
-                        <option value="#000000"><p style="width: 20px; background-color: #000000;"></p></option>
-                        <option value="#ff0000"></option>
-                        <option value="#00ff00"></option>
-                        <option value="#0000ff"></option>
-                    </select>
-                </td>-->
-            </tr>
-            <tr>
-                <th colspan="2">Переменные</th>
-            </tr>
-            <tr>
-                <td><label for="X_selector">Ось X:</label></td>
-                <td><label for="Y_selector">Ось Y:</label></td>
-            </tr>
-            <tr>
-                <td>
-                    <select id="X_selector" name="data_container" style="width:100%;">
-                        {% for variable in variables %}
-                            <option value="{{ variable }}">{{ variable }}</option>
-                        {% endfor %}
-                    </select>
-                </td>
-                <td>
-                    <select id="Y_selector" name="data_container" style="width:100%;">
-                        <option value="empty">---</option>
-                        {% for variable in variables %}
-                            <option value="{{ variable }}">{{ variable }}</option>
-                        {% endfor %}
-                    </select>
-                </td>
-            </tr>
-        </table>
-
-        <table style="border: 1px dashed #609fff; border-radius: 5px;">
-            <tr>
-                <th colspan="{{ variables|length }}">Значения параметров</th>
-            </tr>
-            <tr>
-                {% for variable in variables %}
-                    <td><label for="parameter_{{ variable }}">{{ variable }}:</label></td>
-                {% endfor %}
-            </tr>
-            <tr>
-                {% for variable in variables %}
-                    <td><input type="number" id="parameter_{{ variable }}" name="parameters" value="1.0"/></td>
-                {% endfor %}
-            </tr>
-        </table><br/>
-        <label for="test_checkbox">test:</label>
-        <input type="checkbox" id="test_checkbox" name="data_container" checked/><br/>
-        <label for="formula_string"><b>Формула для построения:</b></label><br/>
-        <input type="text" id="formula_string" name="data_container" value="4*sqrt(x)+25"/><br/>
+        <div id="wrapping_arrow" class="block_wrapper" onclick="Wrap();"></div><br/>
+        <div id="wrapping_area" style="transition: max-height 1s ease 0s;">
+            <select id="type_selector" onchange="Reconfigurate();">
+                <option value="universal">Произвольное построение</option>
+                <option value="lambda1">Построение числителя &lambda;1</option>
+            </select>
+            <table>
+                <tbody>
+                    <tr>
+                        <th colspan="2">Настройки построения</th>
+                    </tr>
+                    <tr>
+                        <td><label for="detail_string">Шагов на единицу:</label></td>
+                        <td><label for="thickness_string">Радиус точек построения:</label></td>
+                        <!--<td><label for="orientation_select">Вид обхода:</label></td>-->
+                        <!--<td><label for="color_select">Цвет точек построения:</label></td>-->
+                    </tr>
+                    <tr>
+                        <td><input type="number" id="detail_string" name="data_container" min="1" value="10"/></td>
+                        <td><input type="number" id="thickness_string" name="data_container" min="0.001" value="0.2"/></td>
+                        <!--<td>
+                            <select id="orientation_select" name="data_container">
+                                <option value="hor">Горизонтальный</option>
+                                <option value="vert">Вертикальный</option>
+                                <option value="dbl">Двойной</option>
+                            </select>
+                        </td>-->
+                       <!--<td>
+                            <select id="color_select">
+                                <option value="#000000"><p style="width: 20px; background-color: #000000;"></p></option>
+                                <option value="#ff0000"></option>
+                                <option value="#00ff00"></option>
+                                <option value="#0000ff"></option>
+                            </select>
+                        </td>-->
+                    </tr>
+                </tbody>
+                <tbody id="container_universal_only_1" style="width:100%">
+                    <tr>
+                        <th colspan="2">Переменные</th>
+                    </tr>
+                    <tr>
+                        <td><label for="X_selector">Ось абсцисс:</label></td>
+                        <td><label for="Y_selector">Ось ординат:</label></td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <select id="X_selector" name="data_container" style="width:100%;">
+                                {% for variable in variables %}
+                                    <option value="{{ variable }}">{{ variable }}</option>
+                                {% endfor %}
+                            </select>
+                        </td>
+                        <td>
+                            <select id="Y_selector" name="data_container" style="width:100%;">
+                                <option value="empty">---</option>
+                                {% for variable in variables %}
+                                    <option value="{{ variable }}">{{ variable }}</option>
+                                {% endfor %}
+                            </select>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            <table class="border_block">
+                <tr>
+                    <th colspan="{{ variables|length }}">Значения параметров</th>
+                </tr>
+                <tr>
+                    {% for variable in variables %}
+                        <td><label for="parameter_{{ variable }}">{{ variable }}:</label></td>
+                    {% endfor %}
+                </tr>
+                <tr id="">
+                    {% for variable in variables %}
+                        <td><input type="number" id="parameter_{{ variable }}" name="parameters" value="1.0"/></td>
+                    {% endfor %}
+                </tr>
+            </table><br/>
+            <div id="container_universal_only_2">
+                <label for="formula_string"><b>Формула для построения:</b></label><br/>
+                <input type="text" id="formula_string" name="data_container" value="4*sqrt(x)+25"/><br/>
+            </div>
+            <div id="container_label1_only" style="display: none">
+                <label for="formula_textarea"><b>Блок для построения:</b></label><br/>
+                <textarea id="formula_textarea" name="data_container">4*sqrt(x)+25</textarea><br/>
+            </div>
+        </div>
     </div>
     <div id="visual_block" class="div_block">
     </div>
