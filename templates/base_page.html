@@ -64,7 +64,15 @@
                 param.value = $(parameters_list[i]).val();
                 parameters[i] = param;
             }
-            // alert(parameters);
+            var formula_string = '';
+            // alert($('#type_selector').val());
+            if($('#type_selector').val() == 'universal'){
+                formula_string = $('#formula_string').val();
+            }
+            else{
+                // alert($('#formula_textarea').text());
+                formula_string = $('#formula_textarea').text();
+            }
 
             $.ajax({
                     xhr: function()
@@ -94,7 +102,7 @@
                     },
                     url: '/graph/data_processing',
                     data: {
-                        'formula': $('#formula_string').val(),
+                        'formula': formula_string,
                         'width': svg_width,
                         'height': svg_height,
                         'type_selector': $('#type_selector').val(),
@@ -143,7 +151,7 @@
                         }));*/
             SetGrid(svg);
             svg.call(d3.zoom()
-                .scaleExtent([1 / 2, 30])
+                .scaleExtent([1 / 2, 60])
                 .on("zoom", function(){
                            // alert('a');
                             g.attr("transform", d3.event.transform);
