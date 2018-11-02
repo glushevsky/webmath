@@ -4,6 +4,8 @@ from django.http import HttpResponse
 from django.template import loader
 import json
 from math import *
+
+# TODO: постмотреть SymPy и https://github.com/augustt198/latex2sympy (конвертер latex в sympy)
 # import cgi
 # from django.views.decorators.csrf import csrf_exempt
 
@@ -29,17 +31,29 @@ def data_processing(request):
 
     type_selector = request_context['type_selector']
     if type_selector == 'lambda1':  # special  case
+        final_formula = request_context['final_formula'].replace(' ', '')
+        text_parts = text.split('\n')
+        # for part in text_parts:
+        #     print('===', part)
         d = eval('m * m / (T * T)')
         for step in range(-step_count, step_count):
             try:
                 a = step * delta_step
-                re_psi = eval('((d * d - d * (w * w - a * cos(f) - b) - b * w * w) * (a * d * cos(f - w * T) - b * w * w + b * d) - (w * w - a * w * sin(f) - d) * a * d * w * sin(f - w * T)) / ((a * d * cos(f - w * T) - b * w * w + b * d) * (a * d * cos(f - w * T) - b * w * w + b * d) + a * a * d * w * w * sin(f - w * T) * sin(f - w * T))')
-                im_psi = eval('((d * d - d * (w * w - a * cos(f) - b) - b * w * w) * a * sqrt(d) * w * sin(f - w * T) + sqrt(d) * (w * w - a * w * sin(f) - d) * (a * d * cos(f - w * T) - b * w * w + b * d)) / ((a * d * cos(f - w * T) - b * w * w + b * d) * (a * d * cos(f - w * T) - b * w * w + b * d) + a * a * d * w * w * sin(f - w * T) * sin(f - w * T))')
-                f1 = eval('re_psi * 2.0 * sqrt(d) * (a * cos(f - w * T) + b) + im_psi - a - w - sin(f - w * T) - 4.0 * d * sqrt(d) + 2.0 * sqrt(d) * (w * w - a * cos(f) - b)')
-                f2 = eval('re_psi * d * (a * cos(f - w * T) + b) + im_psi * sqrt(d) * a * w * sin(f - w * T) - re_psi * b * w * w')
-                f3 = eval('-re_psi * a * w * sin(f - w * T) + im_psi * 2.0 * sqrt(d) * (a * cos(f - w * T) + b) - w * w + 3.0 * d + a * w * sin(f)')
-                f4 = eval('-re_psi * sqrt(d) * a * w * sin(f - w * T) - re_psi * b * w * w + im_psi * d * (a * cos(f - w * T) + b)')
-                points.append([a, f1 * f2 + f3 * f4])
+                for part in text_parts:
+                    part = part.replace(' ', '')
+                    # print('>>>', part.split('=')[0])
+                    globals()[part.split('=')[0]] = eval(part.split('=')[1])
+                    # print(globals()['f1'])
+                # print('______________________')
+                # print(eval(final_formula))
+                points.append(([a, eval(final_formula)]))
+                # re_psi = eval('((d * d - d * (w * w - a * cos(f) - b) - b * w * w) * (a * d * cos(f - w * T) - b * w * w + b * d) - (w * w - a * w * sin(f) - d) * a * d * w * sin(f - w * T)) / ((a * d * cos(f - w * T) - b * w * w + b * d) * (a * d * cos(f - w * T) - b * w * w + b * d) + a * a * d * w * w * sin(f - w * T) * sin(f - w * T))')
+                # im_psi = eval('((d * d - d * (w * w - a * cos(f) - b) - b * w * w) * a * sqrt(d) * w * sin(f - w * T) + sqrt(d) * (w * w - a * w * sin(f) - d) * (a * d * cos(f - w * T) - b * w * w + b * d)) / ((a * d * cos(f - w * T) - b * w * w + b * d) * (a * d * cos(f - w * T) - b * w * w + b * d) + a * a * d * w * w * sin(f - w * T) * sin(f - w * T))')
+                # f1 = eval('re_psi * 2.0 * sqrt(d) * (a * cos(f - w * T) + b) + im_psi - a - w - sin(f - w * T) - 4.0 * d * sqrt(d) + 2.0 * sqrt(d) * (w * w - a * cos(f) - b)')
+                # f2 = eval('re_psi * d * (a * cos(f - w * T) + b) + im_psi * sqrt(d) * a * w * sin(f - w * T) - re_psi * b * w * w')
+                # f3 = eval('-re_psi * a * w * sin(f - w * T) + im_psi * 2.0 * sqrt(d) * (a * cos(f - w * T) + b) - w * w + 3.0 * d + a * w * sin(f)')
+                # f4 = eval('-re_psi * sqrt(d) * a * w * sin(f - w * T) - re_psi * b * w * w + im_psi * d * (a * cos(f - w * T) + b)')
+                # points.append([a, f1 * f2 + f3 * f4])
             except ValueError:
                 pass
             except ZeroDivisionError:
