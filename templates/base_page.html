@@ -114,7 +114,9 @@
                         'parameters':  JSON.stringify(parameters)},
                     success: function (data) {
                         $('#status_block').css('opacity', '0');
-                        Paint(data);
+                        var parse_data = JSON.parse(data);
+                        CreateInfo(parse_data[1]);
+                        Paint(parse_data[0]);
                     },
                     error: function (data) {
                         alert('Возникла ошибка. Проверьте правильность ввода строки.');
@@ -205,8 +207,16 @@
                 .style('stroke', '#909090')
                 .style('stroke-width', '1px');
         }
-        function Paint(data){
-            var dataset = JSON.parse(data);
+        function CreateInfo(dataset){
+            var info_text = '<b>Информация:</b><br/>';
+            for(var info_point in dataset){
+                info_text = info_text + '<span style="color: #ff0000;">Деление на ноль в точке ' + info_point + '</span><br/>';
+            }
+            $('#alert_info').html(info_text);
+        }
+        function Paint(dataset){
+            // alert(dataset);
+            // var dataset = JSON.parse(data);
             // var svg = d3.select("svg");
             var g = d3.select("g");
             Clear(g);
@@ -232,6 +242,7 @@
             var header_text = $('#type_selector option[value=' + selector_type + ']').text();
             $('#header').text(header_text);
             if (selector_type == 'lambda1'){
+                //$('#wrapping_area').css('max-height', 'auto');
                 $('#container_universal_only_1').css('display', 'none');
                 $('#container_universal_only_2').css('display', 'none');
                 $('.div_block').addClass('div_block_lambda1');
@@ -240,6 +251,7 @@
                 $('#container_label1_only').css('display', 'inline-block');
             }
             else{
+                //$('#wrapping_area').css('max-height', 'auto');
                 $('#container_universal_only_1').css('display', 'table-row-group');
                 $('#container_universal_only_2').css('display', 'inline-block');
                 $('.div_block').removeClass('div_block_lambda1');
@@ -252,7 +264,7 @@
             var wrap = $('#wrapping_area');
             if(wrap.css('visibility') == 'hidden'){
                 wrap.css('visibility', 'visible');
-                wrap.css('max-height', '308px');
+                wrap.css('max-height', 'none');
                 $('#wrapping_arrow').removeClass('block_wrapper_up');
             }
             else{
@@ -261,15 +273,19 @@
                 $('#wrapping_arrow').addClass('block_wrapper_up');
             }
         }
+        function TextSubstitution(default_text){
+            var text = default_text.replace(/\n/g, ';<br/>').replace(/\*\*2/g, '<sup>2</sup>').replace(/\*/g, '').replace(/sin/g, '\u2022sin').replace(/cos/g, '\u2022cos').replace(/tan/g, '\u2022tg').replace(/.0/g, '');
+            text = text.replace(/w/g, '&omega;').replace(/f/g, '&phi;').replace(/_psi/g, '<sub>&psi;</sub>').replace(/d/g, '&delta;');
+            text = text.replace(/sqrt\(&delta;\)/g, '&radic;<span style="text-decoration:overline">&delta;</span>');
+            // text = text.replace(/d/g, '&delta;');
+            text = text.replace(/\(/g, '<b>(</b>').replace(/\)/g, '<b>)</b>');
+            return text;
+        }
         function DisplayFormulas(){
-        // демонстрация введенного блока формул
-        var default_text = $('#formula_textarea').val();
-        default_text = default_text.replace(/\n/g, ';<br/>').replace(/\*\*2/g, '<sup>2</sup>').replace(/\*/g, '').replace(/sin/g, '\u2022sin').replace(/cos/g, '\u2022cos').replace(/tan/g, '\u2022tg').replace(/.0/g, '');
-        default_text = default_text.replace(/w/g, '&omega;').replace(/f/g, '&phi;').replace(/_psi/g, '<sub>&psi;</sub>').replace(/d/g, '&delta;');
-        default_text = default_text.replace(/sqrt\(&delta;\)/g, '&radic;<span style="text-decoration:overline">&delta;</span>');
-        // default_text = default_text.replace(/d/g, '&delta;');
-        default_text = default_text.replace(/\(/g, '<b>(</b>').replace(/\)/g, '<b>)</b>');
-        $('#display_textarea').html(default_text + ';<br/>');
+            // демонстрация введенного блока формул
+            var default_text = $('#formula_textarea').val();
+            default_text = TextSubstitution(default_text);
+            $('#display_textarea').html(default_text + ';<br/>');
         }
     </script>
 </head>
@@ -287,10 +303,19 @@
     <div id="data_block" class="div_block">
         <div id="wrapping_arrow" class="block_wrapper" onclick="Wrap();"></div><br/>
         <div id="wrapping_area" style="transition: max-height 1s ease 0s;">
-            <select id="type_selector" onchange="Reconfigurate();">
-                <option value="universal">Произвольное построение</option>
-                <option value="lambda1">Построение числителя &lambda;1</option>
-            </select>
+            <table>
+                <tr>
+                    <th colspan="2"><label for="type_selector">Тип построения</label></th>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        <select id="type_selector" onchange="Reconfigurate();">
+                            <option value="universal">Произвольное построение</option>
+                            <option value="lambda1">Построение числителя &lambda;1</option>
+                        </select>
+                    </td>
+                </tr>
+            </table>
             <table>
                 <tbody>
                     <tr>
@@ -377,13 +402,16 @@
                     Im_psi=((d**2-d*(w**2-a*cos(f)-b)-b*w**2)*a*sqrt(d)*w*sin(f-w*T)+sqrt(d)*(w**2-a*w*sin(f)-d)*(a*d*cos(f-w*T)-b*w**2+b*d))/((a*d*cos(f-w*T)-b*w**2+b*d)*(a*d*cos(f-w*T)-b*w**2+b*d)+a**2*d*w**2*2*sin(f-w*T)**2)
                     F1=Re_psi*2.0*sqrt(d)*(a*cos(f-w*T)+b)+Im_psi-a-w-sin(f-w*T)-4.0*d*sqrt(d)+2.0*sqrt(d)*(w**2-a*cos(f)-b)
                     F2=Re_psi*d*(a*cos(f-w*T)+b)+Im_psi*sqrt(d)*a*w*sin(f-w*T)-Re_psi*b*w**2
-                    F3 = -RE*a*w*sin(f-w*T)+Im_psi*2.0*sqrt(d)*(a*cos(f-w*T)+b)-w**2+3.0*d+a*w*sin(f)
-                    F4=-Re_psi*sqrt(d)*a*w*sin(f-w*T)-re_psi*b*w**2+Im_psi*d*(a*cos(f-w*T)+b)</textarea><br/>
+                    F3 = -Re_psi*a*w*sin(f-w*T)+Im_psi*2.0*sqrt(d)*(a*cos(f-w*T)+b)-w**2+3.0*d+a*w*sin(f)
+                    F4=-Re_psi*sqrt(d)*a*w*sin(f-w*T)-Re_psi*b*w**2+Im_psi*d*(a*cos(f-w*T)+b)</textarea><br/>
+                <label for="formula_string_lambda1"><b>Формула для построения:</b></label><br/>
                 <input type="text" id="formula_string_lambda1" name="data_container" value="F1*F2+F3*F4"/><br/>
             </div>
         </div>
     </div>
     <div id="visual_block" class="div_block">
+    </div>
+    <div id="alert_info" class="div_block">
     </div>
 </body>
 </html>

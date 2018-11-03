@@ -9,8 +9,8 @@ from math import *
 # import cgi
 # from django.views.decorators.csrf import csrf_exempt
 
-variables = ['w', 'f', 'm', 'T', 'b', 'x']
-lambda1_variables = ['w', 'f', 'm', 'T', 'b']
+variables = ['w', 'f', 'T', 'b']
+# lambda1_variables = ['w', 'f', 'm', 'T', 'b']
 
 
 # Create your views here.
@@ -23,6 +23,7 @@ def data_processing(request):
     svg_height = int(request_context['height'])
     parameters = json.loads(request_context['parameters'])
     step_count = svg_width * int(request_context['detail'])
+    substep_count = 2000000
     delta_step = 1.0 / float(request_context['detail'])
     points = []
     # creating parameters
@@ -30,15 +31,32 @@ def data_processing(request):
         globals()[param['name']] = float(param['value'])
 
     type_selector = request_context['type_selector']
+    zero_list = []
     if type_selector == 'lambda1':  # special  case
         final_formula = request_context['final_formula'].replace(' ', '')
         text_parts = text.split('\n')
         # for part in text_parts:
         #     print('===', part)
-        d = eval('m * m / (T * T)')
+        m = 1
+        # d = eval('m * m / (T * T)')
         for step in range(-step_count, step_count):
+            a = step * delta_step
+            # вычисление delta
+            coeff_1 = eval('2.0*b+1+2.0*a*cos(f)-w**2')
+            coeff_2 = eval('-w**2*(2.0*b+1)+2.0*a*(b*cos(f)+w*sin(f)-b*cos(f-w*T)) - a**2*(sin(f)**2-sin(f-w*T)**2)')
+            print(a, w, b, f)
+            print('COEF 1', coeff_1)
+            print('COEF 2', coeff_2)
+            for substep in range(0, substep_count):
+                delta = 0.001 * substep
+                delta_res = eval('delta**2 + delta*coeff_1 + coeff_2')
+                # if 1845<delta<1860:
+                #     print(delta, delta_res)
+                if abs(delta_res) < 0.5:
+                    # print(delta, delta_res)
+                    d = delta
+                    break
             try:
-                a = step * delta_step
                 for part in text_parts:
                     part = part.replace(' ', '')
                     # print('>>>', part.split('=')[0])
@@ -58,6 +76,7 @@ def data_processing(request):
                 pass
             except ZeroDivisionError:
                 print('zero_division')
+                zero_list.append(step * delta_step)
                 pass
     else:  # common cases
         for step in range(-step_count, step_count):
@@ -68,8 +87,9 @@ def data_processing(request):
                 pass
             except ZeroDivisionError:
                 print('zero_division')
+                zero_list.append(step * delta_step)
                 pass
-    return HttpResponse(json.dumps(points))
+    return HttpResponse(json.dumps([points, zero_list]))
 
 
 def base(request):
