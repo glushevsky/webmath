@@ -115,7 +115,7 @@
                     success: function (data) {
                         $('#status_block').css('opacity', '0');
                         var parse_data = JSON.parse(data);
-                        CreateInfo(parse_data[1]);
+                        CreateInfo(parse_data[1], parse_data[2], parse_data[3]);
                         Paint(parse_data[0]);
                     },
                     error: function (data) {
@@ -207,10 +207,16 @@
                 .style('stroke', '#909090')
                 .style('stroke-width', '1px');
         }
-        function CreateInfo(dataset){
+        function CreateInfo(zero_dataset, empty_delta_dataset, negative_delta_dataset){
             var info_text = '<b>Информация:</b><br/>';
-            for(var info_point in dataset){
-                info_text = info_text + '<span style="color: #ff0000;">Деление на ноль в точке ' + info_point + '</span><br/>';
+            for(var i=0; i<zero_dataset.length; i++){
+                info_text = info_text + '<span style="color: #ff0000;">Деление на ноль в точке ' + zero_dataset[i] + '</span><br/>';
+            }
+            for(var j=0; j<empty_delta_dataset.length; j++){
+                info_text = info_text + '<span style="color: #ff0000;">Невозможно вычислить delta в точке ' + empty_delta_dataset[j] + '</span><br/>';
+            }
+            for(var k=0; k<negative_delta_dataset.length; k++){
+                info_text = info_text + 'Нет положительных delta в точке ' + negative_delta_dataset[k] + '<br/>';
             }
             $('#alert_info').html(info_text);
         }
@@ -398,12 +404,12 @@
                 <div id="display_textarea"></div><br/>
                 <label for="formula_textarea"><b>Блок для вспомогательных выражений:</b></label><br/>
                 <textarea id="formula_textarea" name="data_container" onkeyup="DisplayFormulas();">
-                    Re_psi=((d**2-d*(w**2-a*cos(f)-b)-b*w**2)*(a*d*cos(f-w*T)-b*w**2+b*d)-(w**2-a*w*sin(f)-d)*a*d*w*sin(f-w*T))/((a*d*cos(f-w*T)-b*w**2+b*d)*(a*d*cos(f-w*T)-b*w**2+b*d)+a**2*d*w**2*sin(f-w*T)**2)
-                    Im_psi=((d**2-d*(w**2-a*cos(f)-b)-b*w**2)*a*sqrt(d)*w*sin(f-w*T)+sqrt(d)*(w**2-a*w*sin(f)-d)*(a*d*cos(f-w*T)-b*w**2+b*d))/((a*d*cos(f-w*T)-b*w**2+b*d)*(a*d*cos(f-w*T)-b*w**2+b*d)+a**2*d*w**2*2*sin(f-w*T)**2)
-                    F1=Re_psi*2.0*sqrt(d)*(a*cos(f-w*T)+b)+Im_psi-a-w-sin(f-w*T)-4.0*d*sqrt(d)+2.0*sqrt(d)*(w**2-a*cos(f)-b)
+                    Re_psi=((d**2-d*(w**2-a*cos(f)-b)-b*w**2)*(a*d*cos(f-w*T)-b*w**2+b*d)-(w**2-a*w*sin(f)-d)*a*d*w*sin(f-w*T))/((a*d*cos(f-w*T)-b*w**2+b*d)**2+a**2*d*w**2*(sin(f-w*T))**2)
+                    Im_psi=((d**2-d*(w**2-a*cos(f)-b)-b*w**2)*a*sqrt(d)*w*sin(f-w*T)+sqrt(d)*(w**2-a*w*sin(f)-d)*(a*d*cos(f-w*T)-b*w**2+b*d))/((a*d*cos(f-w*T)-b*w**2+b*d)**2+a**2*d*w**2*(sin(f-w*T))**2)
+                    F1=Re_psi*2.0*sqrt(d)*(a*cos(f-w*T)+b)+Im_psi*a*w*sin(f-w*T)-4.0*d*sqrt(d)+2.0*sqrt(d)*(w**2-a*cos(f)-b)
                     F2=Re_psi*d*(a*cos(f-w*T)+b)+Im_psi*sqrt(d)*a*w*sin(f-w*T)-Re_psi*b*w**2
                     F3 = -Re_psi*a*w*sin(f-w*T)+Im_psi*2.0*sqrt(d)*(a*cos(f-w*T)+b)-w**2+3.0*d+a*w*sin(f)
-                    F4=-Re_psi*sqrt(d)*a*w*sin(f-w*T)-Re_psi*b*w**2+Im_psi*d*(a*cos(f-w*T)+b)</textarea><br/>
+                    F4=-Re_psi*sqrt(d)*a*w*sin(f-w*T)-Im_psi*b*w**2+Im_psi*d*(a*cos(f-w*T)+b)</textarea><br/>
                 <label for="formula_string_lambda1"><b>Формула для построения:</b></label><br/>
                 <input type="text" id="formula_string_lambda1" name="data_container" value="F1*F2+F3*F4"/><br/>
             </div>
