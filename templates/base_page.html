@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Graph</title>
+    {% load static %}
+    <link rel="stylesheet" type="text/css" href="{% static 'styles.css' %}">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <script src="http://code.jquery.com/jquery-1.8.3.js"></script>
+    <script>
+        var svg_width = '{{svg_width}}';
+        var svg_height = '{{svg_height}}';
+        var field_size = 5;
+
+        function SetGrid(svg){
+            var g = d3.select("g");
+            for(var i = svg_width/2.0; i < svg_width*field_size; i+=10)
+            {
+                g.append('line')
+                    .attr('name', 'vertical_grid')
+                    .attr('x1', i)
+                    .attr('y1', -svg_height*field_size)
+                    .attr('x2', i)
+                    .attr('y2', svg_height*field_size)
+                    .style('stroke', '#e0e0e0')
+                    .style('stroke-width', '1px');
+                g.append('line')
+                    .attr('id', 'vertical_grid')
+                    .attr('x1', svg_width - i)
+                    .attr('y1', -svg_height*field_size)
+                    .attr('x2', svg_width - i)
+                    .attr('y2', svg_height*field_size)
+                    .style('stroke', '#e0e0e0')
+                    .style('stroke-width', '1px');
+            }
+            for(var i = svg_height/2.0; i < svg_height*field_size; i+=10)
+            {
+                g.append('line')
+                    .attr('name', 'horisontal_grid')
+                    .attr('x1', -svg_width*field_size)
+                    .attr('y1', i)
+                    .attr('x2', svg_width*field_size)
+                    .attr('y2', i)
+                    .style('stroke', '#e0e0e0')
+                    .style('stroke-width', '1px');
+                g.append('line')
+                    .attr('id', 'horisontal_grid')
+                    .attr('x1', -svg_width*field_size)
+                    .attr('y1', svg_height - i)
+                    .attr('x2', svg_width*field_size)
+                    .attr('y2', svg_height - i)
+                    .style('stroke', '#e0e0e0')
+                    .style('stroke-width', '1px');
+            }
+        }
+        //AJAX
+        function DataProcessing() {
+            var parameters = [];
+            var parameters_list = $("input[name='parameters']");
+            for (var i=0; i < parameters_list.length; i++)
+            {
+                var param = {}
+                param.name = parameters_list[i].id.split('_')[1];
+                param.value = $(parameters_list[i]).val();
+                parameters[i] = param;
+            }
+            var formula_string = '';
+            var final_formula = '';
+            // alert($('#type_selector').val());
+            if($('#type_selector').val() == 'universal'){
+                formula_string = $('#formula_string').val();
+            }
+            else{
+                // alert($('#formula_textarea').val());
+                formula_string = $('#formula_textarea').val();
+                final_formula = $('#formula_string_lambda1').val();
+            }
+
+            $.ajax({
+                    xhr: function()
+                    {
+                        $('#status_bar').val('0%');
+                        $('#status_block').css('opacity', '1');
+                        var xhr = new window.XMLHttpRequest();
+                        // прогресс загрузки на сервер
+                        xhr.upload.addEventListener("progress", function(evt){
+                            if (evt.lengthComputable) {
+                                var percentComplete = evt.loaded / evt.total * 100;
+                                // делать что-то...
+                                $('#status_bar').val(String(Math.round(percentComplete)) + '%');
+                                console.log(percentComplete*100);
+                            }
+                        }, false);
+                        // прогресс скачивания с сервера
+                        xhr.addEventListener("progress", function(evt){
+                            if (evt.lengthComputable) {
+                                var percentComplete = evt.loaded / evt.total * 100;
+                                // делать что-то...
+                                $('#status_bar').val(String(Math.round(percentComplete)) + '%');
+                                console.log(percentComplete);
+                            }
+                        }, false);
+                        return xhr;
+                    },
+                    url: '/graph/data_processing',
+                    data: {
+                        'formula': formula_string,
+                        'final_formula': final_formula,
+                        'width': svg_width,
+                        'height': svg_height,
+                        'type_selector': $('#type_selector').val(),
+                        'detail': $('#detail_string').val(),
+                        'parameters':  JSON.stringify(parameters)},
+                    success: function (data) {
+                        $('#status_block').css('opacity', '0');
+                        var parse_data = JSON.parse(data);
+                        CreateInfo(parse_data[1], parse_data[2], parse_data[3]);
+                        Paint(parse_data[0]);
+                    },
+                    error: function (data) {
+                        alert('Возникла ошибка. Проверьте правильность ввода строки.');
+                    }
+                }
+            );
+        }
+
+        function zoomed() {
+          g.attr("transform", d3.event.transform);
+        }
+
+        function GraphInit() {
+            DisplayFormulas();
+            //Create SVG element
+            var formula = $('#formula_string');
+            var formula_textarea = $('#formula_textarea');
+            var display_textarea = $('#display_textarea');
+            formula.css("width", String(svg_width) + 'px');
+            formula_textarea.css('width', String(svg_width) + 'px');
+            display_textarea.css('width', String(svg_width) + 'px');
+            var svg = d3.select("#visual_block")
+                        .append("svg")
+                        .attr('id', 'paint_plate')
+                        .attr("width", svg_width)
+                        .attr("height", svg_height)
+                        .style('border', '1px solid #aaaaaa')
+                        .style('background-color', '#ffffff');
+
+            var g = svg.append("g");
+            g.append("rect")
+                    .attr("id", "special_rect")
+                    .attr("width", svg_width)
+                    .attr("height", svg_height)
+                    .style("fill", "none")
+                    .style("pointer-events", "all");
+                    /*.call(d3.zoom()
+                        .scaleExtent([1 / 2, 4])
+                        .on("zoom", function(){
+                            g.attr("transform", d3.event.transform);
+                        }));*/
+            SetGrid(svg);
+            svg.call(d3.zoom()
+                .scaleExtent([1 / 2, 60])
+                .on("zoom", function(){
+                           // alert('a');
+                            g.attr("transform", d3.event.transform);
+                        }));
+
+            var paint_plate = document.getElementById('paint_plate');
+            paint_plate.onmousemove = function(event){
+                var offset_left = paint_plate.getBoundingClientRect().left;
+                var offset_top = paint_plate.getBoundingClientRect().top;
+                var x_pos = event.clientX - svg_width/2.0 - offset_left;
+                var y_pos = -event.clientY + svg_height/2.0 + offset_top;
+                /*var transform_str = g.attr("transform");
+                if (transform_str != null)
+                {
+                    var translateX = Number(transform_str.split('translate(')[1].split(') scale(')[0].split(',')[0]);
+                    var translateY = Number(transform_str.split('translate(')[1].split(') scale(')[0].split(',')[1]);
+                    var scale = Number(transform_str.split('translate(')[1].split(') scale(')[1].split(')')[0]);
+                    x_pos = x_pos*scale + translateX;
+                    y_pos = y_pos*scale + translateY;
+                }*/
+                document.getElementById('coordinates_string').innerText = 'x: ' + String(x_pos) + ' y: ' + String(y_pos);
+            };
+            paint_plate.onmouseout = function(event){
+                document.getElementById('coordinates_string').innerText = '';
+            };
+            var xAxisLength = 100;
+            /*
+            var xAxis = svg.axis().scale(xAxisLength).orient("bottom").ticks(5);
+            g.call(xAxis);*/
+            g.append("line")
+                .attr('id', 'X_axis')
+                .attr('x1', -svg_width*field_size)
+                .attr('y1', svg_height/2.0)
+                .attr('x2', svg_width*field_size)
+                .attr('y2', svg_height/2.0)
+                .style('stroke', '#909090')
+                .style('stroke-width', '1px');
+            g.append("line")
+                .attr('id', 'Y_axis')
+                .attr('x1', svg_width/2.0)
+                .attr('y1', -svg_height*field_size)
+                .attr('x2', svg_width/2.0)
+                .attr('y2', svg_height*field_size)
+                .style('stroke', '#909090')
+                .style('stroke-width', '1px');
+        }
+        function CreateInfo(zero_dataset, empty_delta_dataset, negative_delta_dataset){
+            var info_text = '<b>Информация:</b><br/>';
+            for(var i=0; i<zero_dataset.length; i++){
+                info_text = info_text + '<span style="color: #ff0000;">Деление на ноль в точке ' + zero_dataset[i] + '</span><br/>';
+            }
+            for(var j=0; j<empty_delta_dataset.length; j++){
+                info_text = info_text + '<span style="color: #ff0000;">Невозможно вычислить delta в точке ' + empty_delta_dataset[j] + '</span><br/>';
+            }
+            for(var k=0; k<negative_delta_dataset.length; k++){
+                info_text = info_text + 'Нет положительных delta в точке ' + negative_delta_dataset[k] + '<br/>';
+            }
+            $('#alert_info').html(info_text);
+        }
+        function Paint(dataset){
+            // alert(dataset);
+            // var dataset = JSON.parse(data);
+            // var svg = d3.select("svg");
+            var g = d3.select("g");
+            Clear(g);
+            var thickness = $('#thickness_string').val();
+            g.selectAll("circle")
+                       .data(dataset)
+                       .enter()
+                       .append("circle")
+                       .attr("cx", function(d) {
+                            return d[0] + svg_width/2.0;
+                       })
+                       .attr("cy", function(d) {
+                            return -d[1] + svg_height/2.0;
+                       })
+                       .attr("r", thickness);
+
+        }
+        function Clear(g){
+            g.selectAll("circle").remove();
+        }
+        function Reconfigurate(){
+            var selector_type = $('#type_selector').val();
+            var header_text = $('#type_selector option[value=' + selector_type + ']').text();
+            $('#header').text(header_text);
+            if (selector_type == 'lambda1'){
+                //$('#wrapping_area').css('max-height', 'auto');
+                $('#container_universal_only_1').css('display', 'none');
+                $('#container_universal_only_2').css('display', 'none');
+                $('.div_block').addClass('div_block_lambda1');
+                $('.button').addClass('button_lambda1');
+                $('.border_block').addClass('border_block_lambda1');
+                $('#container_label1_only').css('display', 'inline-block');
+            }
+            else{
+                //$('#wrapping_area').css('max-height', 'auto');
+                $('#container_universal_only_1').css('display', 'table-row-group');
+                $('#container_universal_only_2').css('display', 'inline-block');
+                $('.div_block').removeClass('div_block_lambda1');
+                $('.button').removeClass('button_lambda1');
+                $('.border_block').removeClass('border_block_lambda1');
+                $('#container_label1_only').css('display', 'none');
+            }
+        }
+        function Wrap(){
+            var wrap = $('#wrapping_area');
+            if(wrap.css('visibility') == 'hidden'){
+                wrap.css('visibility', 'visible');
+                wrap.css('max-height', 'none');
+                $('#wrapping_arrow').removeClass('block_wrapper_up');
+            }
+            else{
+                wrap.css('visibility', 'hidden');
+                wrap.css('max-height', 0);
+                $('#wrapping_arrow').addClass('block_wrapper_up');
+            }
+        }
+        function TextSubstitution(default_text){
+            var text = default_text.replace(/\n/g, ';<br/>').replace(/\*\*2/g, '<sup>2</sup>').replace(/\*/g, '').replace(/sin/g, '\u2022sin').replace(/cos/g, '\u2022cos').replace(/tan/g, '\u2022tg').replace(/.0/g, '');
+            text = text.replace(/w/g, '&omega;').replace(/f/g, '&phi;').replace(/_psi/g, '<sub>&psi;</sub>').replace(/d/g, '&delta;');
+            text = text.replace(/sqrt\(&delta;\)/g, '&radic;<span style="text-decoration:overline">&delta;</span>');
+            // text = text.replace(/d/g, '&delta;');
+            text = text.replace(/\(/g, '<b>(</b>').replace(/\)/g, '<b>)</b>');
+            return text;
+        }
+        function DisplayFormulas(){
+            // демонстрация введенного блока формул
+            var default_text = $('#formula_textarea').val();
+            default_text = TextSubstitution(default_text);
+            $('#display_textarea').html(default_text + ';<br/>');
+        }
+    </script>
+</head>
+<body onload="GraphInit();">
+    <h3 id="header">Произвольное построение</h3>
+    <div id="legend" class="div_block">
+        <a id="start_painting" class="button" onclick="DataProcessing();">Построить</a>
+        <a id="clearing" class="button" onclick="Clear(d3.select('g'));">Очистить</a>
+        <div id="status_block" style="transition: opacity 1s; opacity: 0; display: inline;">
+            <label for="status_bar">Статус выполнения:</label>
+            <input type="text" id="status_bar" class="info" disabled readonly/>
+        </div>
+        <div id="coordinates_string" class="info"></div>
+    </div>
+    <div id="data_block" class="div_block">
+        <div id="wrapping_arrow" class="block_wrapper" onclick="Wrap();"></div><br/>
+        <div id="wrapping_area" style="transition: max-height 1s ease 0s;">
+            <table>
+                <tr>
+                    <th colspan="2"><label for="type_selector">Тип построения</label></th>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        <select id="type_selector" onchange="Reconfigurate();">
+                            <option value="universal">Произвольное построение</option>
+                            <option value="lambda1">Построение числителя &lambda;1</option>
+                        </select>
+                    </td>
+                </tr>
+            </table>
+            <table>
+                <tbody>
+                    <tr>
+                        <th colspan="2">Настройки построения</th>
+                    </tr>
+                    <tr>
+                        <td><label for="detail_string">Шагов на единицу:</label></td>
+                        <td><label for="thickness_string">Радиус точек построения:</label></td>
+                        <!--<td><label for="orientation_select">Вид обхода:</label></td>-->
+                        <!--<td><label for="color_select">Цвет точек построения:</label></td>-->
+                    </tr>
+                    <tr>
+                        <td><input type="number" id="detail_string" name="data_container" min="1" value="10"/></td>
+                        <td><input type="number" id="thickness_string" name="data_container" min="0.001" value="0.2"/></td>
+                        <!--<td>
+                            <select id="orientation_select" name="data_container">
+                                <option value="hor">Горизонтальный</option>
+                                <option value="vert">Вертикальный</option>
+                                <option value="dbl">Двойной</option>
+                            </select>
+                        </td>-->
+                       <!--<td>
+                            <select id="color_select">
+                                <option value="#000000"><p style="width: 20px; background-color: #000000;"></p></option>
+                                <option value="#ff0000"></option>
+                                <option value="#00ff00"></option>
+                                <option value="#0000ff"></option>
+                            </select>
+                        </td>-->
+                    </tr>
+                </tbody>
+                <tbody id="container_universal_only_1" style="width:100%">
+                    <tr>
+                        <th colspan="2">Переменные</th>
+                    </tr>
+                    <tr>
+                        <td><label for="X_selector">Ось абсцисс:</label></td>
+                        <td><label for="Y_selector">Ось ординат:</label></td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <select id="X_selector" name="data_container" style="width:100%;">
+                                {% for variable in variables %}
+                                    <option value="{{ variable }}">{{ variable }}</option>
+                                {% endfor %}
+                            </select>
+                        </td>
+                        <td>
+                            <select id="Y_selector" name="data_container" style="width:100%;">
+                                <option value="empty">---</option>
+                                {% for variable in variables %}
+                                    <option value="{{ variable }}">{{ variable }}</option>
+                                {% endfor %}
+                            </select>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            <table class="border_block">
+                <tr>
+                    <th colspan="{{ variables|length }}">Значения параметров</th>
+                </tr>
+                <tr>
+                    {% for variable in variables %}
+                        <td><label for="parameter_{{ variable }}">{{ variable }}:</label></td>
+                    {% endfor %}
+                </tr>
+                <tr id="">
+                    {% for variable in variables %}
+                        <td><input type="number" id="parameter_{{ variable }}" name="parameters" value="1.0"/></td>
+                    {% endfor %}
+                </tr>
+            </table><br/>
+            <div id="container_universal_only_2">
+                <label for="formula_string"><b>Формула для построения:</b></label><br/>
+                <input type="text" id="formula_string" name="data_container" value="4*sqrt(x)+25"/><br/>
+            </div>
+            <div id="container_label1_only" style="display: none">
+                <label for="display_textarea"><b>Введено:</b></label><br/>
+                <div id="display_textarea"></div><br/>
+                <label for="formula_textarea"><b>Блок для вспомогательных выражений:</b></label><br/>
+                <textarea id="formula_textarea" name="data_container" onkeyup="DisplayFormulas();">
+                    Re_psi=((d**2-d*(w**2-a*cos(f)-b)-b*w**2)*(a*d*cos(f-w*T)-b*w**2+b*d)-(w**2-a*w*sin(f)-d)*a*d*w*sin(f-w*T))/((a*d*cos(f-w*T)-b*w**2+b*d)**2+a**2*d*w**2*(sin(f-w*T))**2)
+                    Im_psi=((d**2-d*(w**2-a*cos(f)-b)-b*w**2)*a*sqrt(d)*w*sin(f-w*T)+sqrt(d)*(w**2-a*w*sin(f)-d)*(a*d*cos(f-w*T)-b*w**2+b*d))/((a*d*cos(f-w*T)-b*w**2+b*d)**2+a**2*d*w**2*(sin(f-w*T))**2)
+                    F1=Re_psi*2.0*sqrt(d)*(a*cos(f-w*T)+b)+Im_psi*a*w*sin(f-w*T)-4.0*d*sqrt(d)+2.0*sqrt(d)*(w**2-a*cos(f)-b)
+                    F2=Re_psi*d*(a*cos(f-w*T)+b)+Im_psi*sqrt(d)*a*w*sin(f-w*T)-Re_psi*b*w**2
+                    F3 = -Re_psi*a*w*sin(f-w*T)+Im_psi*2.0*sqrt(d)*(a*cos(f-w*T)+b)-w**2+3.0*d+a*w*sin(f)
+                    F4=-Re_psi*sqrt(d)*a*w*sin(f-w*T)-Im_psi*b*w**2+Im_psi*d*(a*cos(f-w*T)+b)</textarea><br/>
+                <label for="formula_string_lambda1"><b>Формула для построения:</b></label><br/>
+                <input type="text" id="formula_string_lambda1" name="data_container" value="F1*F2+F3*F4"/><br/>
+            </div>
+        </div>
+    </div>
+    <div id="visual_block" class="div_block">
+    </div>
+    <div id="alert_info" class="div_block">
+    </div>
+</body>
+</html>
