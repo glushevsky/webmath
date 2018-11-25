@@ -14,6 +14,11 @@
     border: 1px solid #afefe0;
     transition: background-color 2s;
 }
+.div_block_sign {
+    background-color: #afdfff;
+    border: 1px solid #afdfff;
+    transition: background-color 2s;
+}
 .info {
     height: 20px;
     width: 150px;
@@ -48,12 +53,24 @@
     background-color: #30cfc0;
     transition: background-color 0s;
 }
+.button_sign {
+    background-color: #70dff0;
+    transition: background-color 1s;
+}
+.button_sign:hover {
+    background-color: #30cff0;
+    transition: background-color 0s;
+}
 .border_block {
     border: 1px dashed #ff9f60;
     border-radius: 5px;
 }
 .border_block_lambda1 {
     border: 1px dashed #70dfd0;
+    border-radius: 5px;
+}
+.border_block_sign {
+    border: 1px dashed #70dff0;
     border-radius: 5px;
 }
 .block_wrapper {

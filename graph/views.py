@@ -40,6 +40,7 @@ def data_processing(request):
     svg_height = int(request_context['height'])
     parameters = json.loads(request_context['parameters'])
     step_count = svg_width * int(request_context['detail'])
+    step_count2 = svg_height * int(request_context['detail'])
     substep_count = 2000000
     delta_step = 1.0 / float(request_context['detail'])
     points = []
@@ -114,6 +115,28 @@ def data_processing(request):
                 # print('empty', step * delta_step)
                 empty_delta_list.append(step * delta_step)
                 pass
+    elif type_selector == 'sign':  # sign values case
+        omega = globals()['b']
+        cos_part = eval('cos(f) - cos(f - w*T)')
+        sin_part = eval('sin(f) - sin(f - w*T)')
+        for step1 in range(-100, 100):
+            for step2 in range(-100, 100):
+                a = step1 * delta_step
+                b = step2 * delta_step
+                try:
+                    l_sign = 0
+                    Re_lambda2 = eval('-1.0 - omega**2 * (w**2 - a*cos_part + a*sin(f - w*T)*(w**2 - a*w*sin_part)/(b*w) + (w**2 - a*w*sin_part)*(w**2 - a*w*sin_part)/(2.0*b*w**2))/(b*w**2)')
+                    if Re_lambda2 > 0.0:
+                        l_sign = 1
+                    elif Re_lambda2 < 0.0:
+                        l_sign = -1
+                    points.append(([a, b, l_sign]))
+                except:
+                    pass
+                # except ValueError:
+                #     pass
+                # except ZeroDivisionError:
+                #     pass
     else:  # common cases
         for step in range(-step_count, step_count):
             try:
