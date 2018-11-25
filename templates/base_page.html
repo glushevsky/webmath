@@ -178,14 +178,14 @@
                                 //$('[name="datapoint"]').remove();
                                 //Paint(global_points, String(2.0 * scale_val) + 'px');
                                 //$('[name="datapoint"]').attr('data-test','1');
-                                $('[name="datapoint"][cx="600.6"]').attr('stroke', '#ff0000');
+                                //$('[name="datapoint"][cx="600.6"]').attr('stroke', '#ff0000');
                                 //$('[name="datapoint"]').css('r', String(2.0*scale_val) + 'px');
                                 //alert($('[name="datapoint"][cx="600.6"]').offset().left);
                                 //alert($($('[name="datapoint"]').offset().left).length);
-                                /*if (autoscaling && ((scale_val > 0.01) && (scale_val < 0.05) || (scale_val > 0.3) && (scale_val < 0.35) || (scale_val > 0.6) && (scale_val < 0.65)))
+                                if (autoscaling && ((scale_val > 0.01) && (scale_val < 0.05) || (scale_val > 0.3) && (scale_val < 0.35) || (scale_val > 0.6) && (scale_val < 0.65)))
                                 {
                                     $('[name="datapoint"]').css('r', String(2.0*scale_val) + 'px');
-                                }*/
+                                }
                             }
                             g.attr("transform", d3.event.transform);
                         }));
