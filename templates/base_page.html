@@ -11,11 +11,13 @@
     <script>
         var svg_width = '{{svg_width}}';
         var svg_height = '{{svg_height}}';
-        var field_size = 5;
+        var field_size = 1;
+        var global_points = [];
 
         function SetGrid(svg){
             var g = d3.select("g");
-            for(var i = svg_width/2.0; i < svg_width*field_size; i+=10)
+            var grid_step = 1; //размерность сетки
+            for(var i = svg_width/2.0; i < svg_width*field_size; i+=grid_step)
             {
                 g.append('line')
                     .attr('name', 'vertical_grid')
@@ -26,7 +28,7 @@
                     .style('stroke', '#e0e0e0')
                     .style('stroke-width', '1px');
                 g.append('line')
-                    .attr('id', 'vertical_grid')
+                    .attr('name', 'vertical_grid')
                     .attr('x1', svg_width - i)
                     .attr('y1', -svg_height*field_size)
                     .attr('x2', svg_width - i)
@@ -34,7 +36,7 @@
                     .style('stroke', '#e0e0e0')
                     .style('stroke-width', '1px');
             }
-            for(var i = svg_height/2.0; i < svg_height*field_size; i+=10)
+            for(var i = svg_height/2.0; i < svg_height*field_size; i+=grid_step)
             {
                 g.append('line')
                     .attr('name', 'horisontal_grid')
@@ -45,7 +47,7 @@
                     .style('stroke', '#e0e0e0')
                     .style('stroke-width', '1px');
                 g.append('line')
-                    .attr('id', 'horisontal_grid')
+                    .attr('name', 'horisontal_grid')
                     .attr('x1', -svg_width*field_size)
                     .attr('y1', svg_height - i)
                     .attr('x2', svg_width*field_size)
@@ -76,6 +78,7 @@
                 formula_string = $('#formula_textarea').val();
                 final_formula = $('#formula_string_lambda1').val();
             }
+            var thickness = $('#thickness_string').val();
 
             $.ajax({
                     xhr: function()
@@ -116,7 +119,8 @@
                         $('#status_block').css('opacity', '0');
                         var parse_data = JSON.parse(data);
                         CreateInfo(parse_data[1], parse_data[2], parse_data[3]);
-                        Paint(parse_data[0]);
+                        global_points = parse_data[0];
+                        Paint(parse_data[0], thickness);
                     },
                     error: function (data) {
                         alert('Возникла ошибка. Проверьте правильность ввода строки.');
@@ -160,9 +164,29 @@
                         }));*/
             SetGrid(svg);
             svg.call(d3.zoom()
-                .scaleExtent([1 / 2, 60])
+                .scaleExtent([1 / 2, 1200])
                 .on("zoom", function(){
-                           // alert('a');
+                            var trans = g.attr("transform");
+                            if ((trans != '')&&(trans != null))
+                            {
+                                var scale_val = 1.0/parseFloat(trans.split('scale(')[1].split(')')[0]);
+                                $('[name="vertical_grid"]').css('stroke-width', String(scale_val) + 'px');
+                                $('[name="horisontal_grid"]').css('stroke-width', String(scale_val) + 'px');
+                                $('#X_axis').css('stroke-width', String(2.0 * scale_val) + 'px');
+                                $('#Y_axis').css('stroke-width', String(2.0 * scale_val) + 'px');
+                                var autoscaling = $('#thickness_checkbox').is(':checked');
+                                //$('[name="datapoint"]').remove();
+                                //Paint(global_points, String(2.0 * scale_val) + 'px');
+                                //$('[name="datapoint"]').attr('data-test','1');
+                                $('[name="datapoint"][cx="600.6"]').attr('stroke', '#ff0000');
+                                //$('[name="datapoint"]').css('r', String(2.0*scale_val) + 'px');
+                                //alert($('[name="datapoint"][cx="600.6"]').offset().left);
+                                //alert($($('[name="datapoint"]').offset().left).length);
+                                /*if (autoscaling && ((scale_val > 0.01) && (scale_val < 0.05) || (scale_val > 0.3) && (scale_val < 0.35) || (scale_val > 0.6) && (scale_val < 0.65)))
+                                {
+                                    $('[name="datapoint"]').css('r', String(2.0*scale_val) + 'px');
+                                }*/
+                            }
                             g.attr("transform", d3.event.transform);
                         }));
 
@@ -197,7 +221,7 @@
                 .attr('x2', svg_width*field_size)
                 .attr('y2', svg_height/2.0)
                 .style('stroke', '#909090')
-                .style('stroke-width', '1px');
+                .style('stroke-width', '2px');
             g.append("line")
                 .attr('id', 'Y_axis')
                 .attr('x1', svg_width/2.0)
@@ -205,7 +229,7 @@
                 .attr('x2', svg_width/2.0)
                 .attr('y2', svg_height*field_size)
                 .style('stroke', '#909090')
-                .style('stroke-width', '1px');
+                .style('stroke-width', '2px');
         }
         function CreateInfo(zero_dataset, empty_delta_dataset, negative_delta_dataset){
             var info_text = '<b>Информация:</b><br/>';
@@ -220,17 +244,18 @@
             }
             $('#alert_info').html(info_text);
         }
-        function Paint(dataset){
+        function Paint(dataset, thickness){
             // alert(dataset);
             // var dataset = JSON.parse(data);
             // var svg = d3.select("svg");
             var g = d3.select("g");
             Clear(g);
-            var thickness = $('#thickness_string').val();
+            // var thickness = $('#thickness_string').val();
             g.selectAll("circle")
                        .data(dataset)
                        .enter()
                        .append("circle")
+                       .attr("name", "datapoint")
                        .attr("cx", function(d) {
                             return d[0] + svg_width/2.0;
                        })
@@ -330,12 +355,14 @@
                     <tr>
                         <td><label for="detail_string">Шагов на единицу:</label></td>
                         <td><label for="thickness_string">Радиус точек построения:</label></td>
+                        <td><label for="thickness_string">Масштабировать автоматически:</label></td>
                         <!--<td><label for="orientation_select">Вид обхода:</label></td>-->
                         <!--<td><label for="color_select">Цвет точек построения:</label></td>-->
                     </tr>
                     <tr>
                         <td><input type="number" id="detail_string" name="data_container" min="1" value="10"/></td>
                         <td><input type="number" id="thickness_string" name="data_container" min="0.001" value="0.2"/></td>
+                        <td><input type="checkbox" id="thickness_checkbox" name="data_container"></td>
                         <!--<td>
                             <select id="orientation_select" name="data_container">
                                 <option value="hor">Горизонтальный</option>

@@ -125,6 +125,11 @@ def data_processing(request):
                 # print('zero_division')
                 zero_list.append(step * delta_step)
                 pass
+    print(points)
+    # new_points = []
+    # for step in range(0, len(points), 10):
+    #     new_points.append(points[step])
+
     return HttpResponse(json.dumps([points, zero_list, empty_delta_list, negative_delta_list]))
 
 
