@@ -4,6 +4,7 @@ from django.http import HttpResponse
 from django.template import loader
 import json
 from math import *
+import numpy
 
 # TODO: постмотреть SymPy и https://github.com/augustt198/latex2sympy (конвертер latex в sympy)
 # import cgi
@@ -29,6 +30,34 @@ def quadratic_equation_results(quad_coefficient, linear_coefficient, const_coeff
         return False, 0.0, 0.0
     return False, 0.0, 0.0
 
+
+# yf
+def checking(formula, **parameters):
+    # print('hello')
+    # print(formula)
+    # print(parameters)
+    # print(eval(formula)
+    zeros = []
+    file_a1 = open('zeros_a1.txt', 'w')
+    file_a1.write('f T w b res\n')
+    steps = 628.0*1000.0*1000.0*500.0
+    step = 0
+    for b in numpy.arange(0.0, 50.0, 0.001):
+        tmp_result = eval(formula)
+        if abs(tmp_result) < 0.0001:
+            file_a1.write(str(b) + ' ' + str(tmp_result) + '\n')
+            zeros.append([b, tmp_result])
+    # for f in numpy.arange(0.0, 6.28, 0.01):
+    #     print(str(round(step * 100.0 / steps)) + '%')
+    #     for T in numpy.arange(0.0, 100.0, 0.1):
+    #         for w in numpy.arange(0.0, 100.0, 0.1):
+    #             for b in numpy.arange(0.0, 50.0, 0.1):
+    #                 tmp_result = eval(formula)
+    #                 step += 1
+    #                 if abs(tmp_result) < 0.0001:
+    #                     file_a1.write(str(f) + ' ' + str(T) + ' ' + str(w) + ' ' + str(b) + ' ' + str(tmp_result) + '\n')
+    file_a1.close()
+    return zeros
 
 # Create your views here.
 def data_processing(request):
@@ -119,24 +148,120 @@ def data_processing(request):
         omega = globals()['b']
         cos_part = eval('cos(f) - cos(f - w*T)')
         sin_part = eval('sin(f) - sin(f - w*T)')
-        for step1 in range(-100, 100):
-            for step2 in range(-100, 100):
+        for step1 in range(-1*int(request_context['detail']), 1*int(request_context['detail'])):
+            for step2 in range(-1*int(request_context['detail']), 1*int(request_context['detail'])):
                 a = step1 * delta_step
                 b = step2 * delta_step
                 try:
                     l_sign = 0
-                    Re_lambda2 = eval('-1.0 - omega**2 * (w**2 - a*cos_part + a*sin(f - w*T)*(w**2 - a*w*sin_part)/(b*w) + (w**2 - a*w*sin_part)*(w**2 - a*w*sin_part)/(2.0*b*w**2))/(b*w**2)')
-                    if Re_lambda2 > 0.0:
-                        l_sign = 1
-                    elif Re_lambda2 < 0.0:
-                        l_sign = -1
-                    points.append(([a, b, l_sign]))
+                    # вычисления для lambda2
+                    try:
+                        Re_lambda2 = eval('-1.0 - omega**2 * (w**2 - a*cos_part + a*sin(f - w*T)*(w**2 - a*w*sin_part)/(b*w) + (w**2 - a*w*sin_part)*(w**2 - a*w*sin_part)/(2.0*b*w**2))/(b*w**2)')
+                        if Re_lambda2 > 0.0:
+                            l_sign = 1
+                        elif Re_lambda2 < 0.0:
+                            l_sign = -1
+                    except:
+                        l_sign = 2
+                        pass
+                    # проверка дельты
+                    d_flag = 0
+                    d_list = []
+                    try:
+                        coeff_1 = eval('2.0*b+1+2.0*a*cos(f)-w**2')
+                        coeff_2 = eval('-w**2*(2.0*b+1)+2.0*a*(b*cos(f)+w*sin(f)-b*cos(f-w*T)) - a**2*(sin(f)**2-sin(f-w*T)**2)')
+                        delta_status, delta_root1, delta_root2 = quadratic_equation_results(1.0, coeff_1, coeff_2)
+                        # print(a, delta_status)
+                        if delta_status:  # если удалось найти корни
+                            if delta_root1 > 0.0:
+                                d_flag += 1
+                                d_list.append(delta_root1)
+                            if delta_root2 > 0.0:
+                                d_flag += 1
+                                d_list.append(delta_root2)
+                    except:
+                        pass
+                    # вычисления для lambda1
+                    L1_sign = 2  # если ошибка
+                    if not d_list:
+                        pass
+                    else:
+                        L1_counter = -1  # если только отрицательные значения
+                        for d in d_list:
+                            try:
+                                text_parts = [
+                                    ['Re_psi','((d**2-d*(w**2-a*cos(f)-b)-b*w**2)*(a*d*cos(f-w*T)-b*w**2+b*d)-(w**2-a*w*sin(f)-d)*a*d*w*sin(f-w*T))/((a*d*cos(f-w*T)-b*w**2+b*d)**2+a**2*d*w**2*(sin(f-w*T))**2)'],
+                                    ['Im_psi','((d**2-d*(w**2-a*cos(f)-b)-b*w**2)*a*sqrt(d)*w*sin(f-w*T)+sqrt(d)*(w**2-a*w*sin(f)-d)*(a*d*cos(f-w*T)-b*w**2+b*d))/((a*d*cos(f-w*T)-b*w**2+b*d)**2+a**2*d*w**2*(sin(f-w*T))**2)'],
+                                    ['F1', 'Re_psi*2.0*sqrt(d)*(a*cos(f-w*T)+b)+Im_psi*a*w*sin(f-w*T)-4.0*d*sqrt(d)+2.0*sqrt(d)*(w**2-a*cos(f)-b)'],
+                                    ['F2', 'Re_psi*d*(a*cos(f-w*T)+b)+Im_psi*sqrt(d)*a*w*sin(f-w*T)-Re_psi*b*w**2'],
+                                    ['F3', '-Re_psi*a*w*sin(f-w*T)+Im_psi*2.0*sqrt(d)*(a*cos(f-w*T)+b)-w**2+3.0*d+a*w*sin(f)'],
+                                    ['F4', '-Re_psi*sqrt(d)*a*w*sin(f-w*T)-Im_psi*b*w**2+Im_psi*d*(a*cos(f-w*T)+b)']
+                                    ]
+                                final_formula = 'F1*F2+F3*F4'
+                                for part in text_parts:
+                                    # part = part.replace(' ', '')
+                                    globals()[part[0]] = eval(part[1].replace(' ', ''))
+                                final_result = eval(final_formula)
+                                if final_result > 0.0 and L1_counter != 2:  # если существует положительное значение
+                                    L1_counter = 1
+                            except:
+                                L1_counter = 2
+                                pass
+                        if L1_counter != 2:
+                            L1_sign = L1_counter
+                    points.append(([a, b, l_sign, d_flag, L1_sign]))
                 except:
                     pass
-                # except ValueError:
-                #     pass
-                # except ZeroDivisionError:
-                #     pass
+    elif type_selector == 'a1':  # проверка знаменателя a1 на нули
+        check_formula = '(w**2+b)*cos(f)+w*sin(f)-b*cos(f-w*T)'
+        print(parameters)
+        # checking(check_formula, b=globals()['b'], f=globals()['f'], T=globals()['T'], w=globals()['w'])
+        zero_list = checking(check_formula, f=globals()['f'], T=globals()['T'], w=globals()['w'])
+        # checking(check_formula)
+    elif type_selector == 'resolve':  # проверка разрешимости lambda1 (при a1)
+        try:
+            theta = 0.0
+            dzeta = eval('w*T')
+            while abs(dzeta) > 2.0*pi:
+                if dzeta > 0.0:
+                    dzeta = dzeta - 2.0*pi
+                elif dzeta < 0.0:
+                    dzeta = dzeta + 2.0*pi
+            # print (dzeta)
+            if dzeta > 0.0:
+                theta = 2.0*pi - dzeta
+            elif dzeta < 0.0:
+                theta = -2.0*pi - dzeta
+            # print(theta)
+            # print(eval('theta + w*T')/(2.0*pi))
+        except:
+            zero_list.append('Невозможно вычислить theta')
+        try:
+            A_value = eval('(-w**3 - (2.0*b + 1)*w)/((w**2 + b) * cos(f) + w*sin(f) - b*cos(f-w*T))')
+        except:
+            zero_list.append('Невозможно вычислить А')
+        try:
+            part1 = eval('2.0*(w**2+b)+w*A_value*cos(f)')
+            part2 = eval('2.0*b+w*A_value*cos(f-w*T)')
+            part3 = eval('w*(2.0+A_value*sin(f))')
+            delimiter = eval('(2.0*b + w*A_value*cos(f-w*T))**2 + (sin(f-w*T))**2')
+            cosV_value = eval('(part1*part2 + part3*sin(f-w*T))/delimiter')
+            sinV_value = eval('-(part1*sin(f-w*T)-part2*part3)/delimiter')
+            if abs(cosV_value) > 1.0 or abs(sinV_value) > 1.0:
+                zero_list.append('Значение cos или sin некорректно')
+        except:
+            zero_list.append('Невозможно вычислить exp')
+        try:
+            V_value = acos(cosV_value)
+            a1_value = (theta + V_value)* A_value
+        except:
+            zero_list.append('Невозможно вычислить a1')
+        try:
+            lpart = eval('-2.0*w**2 + cos(V_value)*(w**2*a1_value*cos(f-w*T)+2.0*w*b*(theta+V_value)) - sin(V_value)*w**2 * a1_value*sin(f-w*T)')
+            rpart = eval('2.0*w**3 + 2.0*w*b + cos(V_value)* w**2 * a1_value*sin(f-w*T) + sin(V_value)*(w**2 * a1_value * cos(f-w*T) + 2.0*w*(theta+V_value)*b)')
+            zero_list.append('Theta = ' + str(theta) + '; Omega = ' + str(V_value) + '; Знаменатель lambda1 = ' + str(lpart**2 + rpart**2))
+        except:
+            zero_list.append('Невозможно вычислить знаменатель lambda1')
     else:  # common cases
         for step in range(-step_count, step_count):
             try:
